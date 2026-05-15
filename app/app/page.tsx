@@ -9,7 +9,12 @@ import {
 } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { promptForDay } from "@/lib/prompts/daily";
-import { todayInTimezone, weekdayInTimezone } from "@/lib/utils";
+import {
+  retroDayForSabbath,
+  todayInTimezone,
+  weekStartFor,
+  weekdayInTimezone,
+} from "@/lib/utils";
 
 function computeStreak(
   dates: { checkin_date: string; completed_at: string | null }[],
@@ -91,6 +96,18 @@ export default async function DashboardPage() {
 
   const todaysPrompt = promptForDay(profile.current_phase, today, user.id);
 
+  const retroDay = retroDayForSabbath(profile.sabbath_day);
+  const isRetroDay = weekday === retroDay && !onSabbath;
+  const currentWeekStart = weekStartFor(today);
+  const { data: thisWeeksRetro } = await supabase
+    .from("weekly_retros")
+    .select("ai_synthesis")
+    .eq("user_id", user.id)
+    .eq("week_start", currentWeekStart)
+    .maybeSingle();
+  const retroDone = !!(thisWeeksRetro as { ai_synthesis: string | null } | null)
+    ?.ai_synthesis;
+
   return (
     <div className="container max-w-3xl space-y-6 py-10">
       <div className="space-y-1">
@@ -142,6 +159,25 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       )}
+
+      {isRetroDay && !retroDone ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-serif text-xl">
+              Your weekly retro is ready.
+            </CardTitle>
+            <CardDescription>
+              Twenty minutes. Wins, struggles, lessons. The synthesis lands the
+              moment you submit it.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link href="/app/retro">Open retro</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>
