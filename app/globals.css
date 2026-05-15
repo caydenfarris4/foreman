@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 14% 97%;
+    --foreground: 24 10% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 24 10% 12%;
+    --primary: 24 10% 16%;
+    --primary-foreground: 40 14% 97%;
+    --secondary: 30 8% 92%;
+    --secondary-foreground: 24 10% 16%;
+    --muted: 30 8% 94%;
+    --muted-foreground: 24 6% 40%;
+    --accent: 28 60% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 75% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 8% 88%;
+    --input: 30 8% 88%;
+    --ring: 24 10% 30%;
+    --radius: 0.5rem;
+    --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+      "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  }
+
+  .dark {
+    --background: 24 10% 8%;
+    --foreground: 40 14% 95%;
+    --card: 24 10% 11%;
+    --card-foreground: 40 14% 95%;
+    --primary: 40 14% 95%;
+    --primary-foreground: 24 10% 12%;
+    --secondary: 24 6% 18%;
+    --secondary-foreground: 40 14% 95%;
+    --muted: 24 6% 16%;
+    --muted-foreground: 24 6% 60%;
+    --accent: 28 60% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 24 6% 22%;
+    --input: 24 6% 22%;
+    --ring: 40 14% 80%;
+  }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+  }
+}
