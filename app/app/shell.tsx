@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 interface AppShellProps {
   initials: string;
   signOut: () => Promise<void>;
+  trialBanner: { daysLeft: number } | null;
   children: React.ReactNode;
 }
 
@@ -71,7 +72,12 @@ const TABS = [
   },
 ];
 
-export function AppShell({ initials, signOut, children }: AppShellProps) {
+export function AppShell({
+  initials,
+  signOut,
+  trialBanner,
+  children,
+}: AppShellProps) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const activeTab =
@@ -126,6 +132,26 @@ export function AppShell({ initials, signOut, children }: AppShellProps) {
           </div>
         </div>
       </header>
+
+      {trialBanner ? (
+        <div className="border-b border-rule bg-oak-wash">
+          <div className="container flex max-w-2xl items-center justify-between gap-3 py-2.5">
+            <p className="type-caption text-ink2">
+              <span className="type-cap mr-2 text-oak-dim">
+                TRIAL · {trialBanner.daysLeft} DAY
+                {trialBanner.daysLeft === 1 ? "" : "S"} LEFT
+              </span>
+              Lock in your plan before the site goes dark.
+            </p>
+            <Link
+              href="/app/upgrade"
+              className="type-label whitespace-nowrap text-oak-dim underline underline-offset-2 hover:text-ink"
+            >
+              Pick a plan
+            </Link>
+          </div>
+        </div>
+      ) : null}
 
       <main className="container max-w-2xl">{children}</main>
 
