@@ -21,7 +21,7 @@ The build follows the order in the original product brief:
 2. ✅ Daily check-in with Claude integration, auto-library
 3. ⏳ Situation library + retrieval (basic list + detail in place; search next)
 4. ⏳ Weekly retrospective
-5. ⏳ Vercel Cron + Resend daily prompt emails
+5. ✅ Vercel Cron + Resend daily prompt emails
 6. ⏳ Stripe billing + paywall after trial
 7. ⏳ Marketing landing page polish
 
@@ -71,6 +71,27 @@ docs/under-construction.txt       source book — coaching reference
 The check-in route and dashboard both check the user's `sabbath_day` against
 the current weekday in their `timezone`. On the sabbath, the prompt UI is
 replaced with a rest message; the cron route (phase 5) skips them entirely.
+
+## Daily prompt email cron
+
+`vercel.json` schedules `GET /api/cron/daily-prompts` every hour on the hour
+(`0 * * * *`). The handler:
+
+1. Authenticates against `Bearer ${CRON_SECRET}` (Vercel Cron sends this).
+2. Pulls every onboarded profile whose `subscription_status` is `trial` or
+   `active` (service-role client — bypasses RLS).
+3. For each profile, computes the current hour in their timezone and skips
+   anyone whose `notification_time` hour doesn't match.
+4. Skips anyone whose weekday-in-timezone matches their `sabbath_day`.
+5. Skips anyone who has already completed today's check-in.
+6. Otherwise, *locks in today's prompt by inserting the `daily_checkins`
+   row*, then sends the email via Resend. The row creation is the
+   idempotency guard: if the cron runs twice in the same hour for some
+   reason, the unique `(user_id, checkin_date)` constraint prevents a
+   double-insert and the second run skips the send.
+
+The HTML email matches the design system (oak rule, italic serif prompt,
+inked CTA). Plain-text fallback included.
 
 ## Daily prompt rotation
 
