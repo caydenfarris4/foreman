@@ -3,55 +3,95 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 40 14% 97%;
-    --foreground: 24 10% 12%;
-    --card: 0 0% 100%;
-    --card-foreground: 24 10% 12%;
-    --primary: 24 10% 16%;
-    --primary-foreground: 40 14% 97%;
-    --secondary: 30 8% 92%;
-    --secondary-foreground: 24 10% 16%;
-    --muted: 30 8% 94%;
-    --muted-foreground: 24 6% 40%;
-    --accent: 28 60% 50%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 75% 45%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 30 8% 88%;
-    --input: 30 8% 88%;
-    --ring: 24 10% 30%;
-    --radius: 0.5rem;
-    --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-      "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  }
-
-  .dark {
-    --background: 24 10% 8%;
-    --foreground: 40 14% 95%;
-    --card: 24 10% 11%;
-    --card-foreground: 40 14% 95%;
-    --primary: 40 14% 95%;
-    --primary-foreground: 24 10% 12%;
-    --secondary: 24 6% 18%;
-    --secondary-foreground: 40 14% 95%;
-    --muted: 24 6% 16%;
-    --muted-foreground: 24 6% 60%;
-    --accent: 28 60% 50%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 70% 50%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 24 6% 22%;
-    --input: 24 6% 22%;
-    --ring: 40 14% 80%;
-  }
-
-  * {
-    @apply border-border;
-  }
+  html,
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: var(--font-sans);
+    background-color: #f5f1ea; /* paper */
+    color: #1a1816; /* ink */
+    font-family: var(--font-sans), -apple-system, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  ::selection {
+    background-color: rgba(184, 132, 63, 0.35); /* oak wash */
+  }
+}
+
+@layer components {
+  /* Mono caps — METADATA · TAGS · 1:1 */
+  .type-cap {
+    font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+  .type-caption {
+    font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    line-height: 1.4;
+  }
+  .type-spec {
+    font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.3;
+  }
+  .type-display {
+    font-family: var(--font-serif), Georgia, serif;
+    font-size: 32px;
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+  }
+  .type-h1 {
+    font-family: var(--font-serif), Georgia, serif;
+    font-size: 26px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+  .type-h2 {
+    font-family: var(--font-serif), Georgia, serif;
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: -0.015em;
+  }
+  .type-prompt {
+    font-family: var(--font-serif), Georgia, serif;
+    font-size: 22px;
+    font-weight: 400;
+    font-style: italic;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+  }
+  .type-body {
+    font-family: var(--font-sans), system-ui, sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.55;
+    letter-spacing: -0.005em;
+  }
+  .type-body-lg {
+    font-family: var(--font-sans), system-ui, sans-serif;
+    font-size: 17px;
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: -0.005em;
+  }
+  .type-body-sm {
+    font-family: var(--font-sans), system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+  .type-label {
+    font-family: var(--font-sans), system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.3;
   }
 }

@@ -1,11 +1,6 @@
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { PhaseTag } from "@/components/ui/phase-tag";
 import { createClient } from "@/lib/supabase/server";
 import type { FrameworkPhase, Situation } from "@/lib/database.types";
 import { LibraryControls } from "./controls";
@@ -38,8 +33,7 @@ export default async function LibraryPage({
   const phase = isPhase(params.phase) ? params.phase : null;
   const tag = (params.tag ?? "").trim();
 
-  // Phase counts — independent of the active filter so the tabs always
-  // show the user the shape of their library.
+  // Phase counts.
   const countQueries = await Promise.all(
     PHASES.map((p) =>
       supabase
@@ -60,8 +54,7 @@ export default async function LibraryPage({
     finishing: countQueries[2].count ?? 0,
   };
 
-  // Tag list — surface the user's top tags as quick filters. Pull a recent
-  // window of situations and aggregate client-side.
+  // Tag list — aggregate from recent window.
   const { data: tagSource } = await supabase
     .from("situations")
     .select("tags")
@@ -76,8 +69,7 @@ export default async function LibraryPage({
   }
   const topTags = [...tagFrequency.entries()]
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 12)
-    .map(([t]) => t);
+    .slice(0, 8);
 
   // Actual filtered results.
   let query = supabase
@@ -102,91 +94,120 @@ export default async function LibraryPage({
     "id" | "title" | "situation" | "framework_phase" | "tags" | "created_at"
   >[];
 
+  // Compute the eyebrow stats.
+  const weekStart = new Date();
+  weekStart.setUTCDate(weekStart.getUTCDate() - 14 * 7);
+  const totalWeeks = Math.max(
+    1,
+    Math.ceil(
+      (Date.now() - weekStart.getTime()) / (7 * 24 * 60 * 60 * 1000),
+    ),
+  );
+  // Better: use the date of the oldest situation if we have one.
+  const oldest = situations[situations.length - 1];
+  const weeks = oldest
+    ? Math.max(
+        1,
+        Math.ceil(
+          (Date.now() - new Date(oldest.created_at).getTime()) /
+            (7 * 24 * 60 * 60 * 1000),
+        ),
+      )
+    : totalWeeks;
+
   return (
-    <div className="container max-w-3xl space-y-6 py-10">
-      <div>
-        <h1 className="font-serif text-3xl tracking-tight">Situation library</h1>
-        <p className="mt-1 text-muted-foreground">
-          Every check-in lives here. Pull it up when the same situation comes
-          back.
+    <div className="px-3 pb-8 pt-4">
+      <div className="px-1">
+        <p className="type-cap text-graphite">
+          {counts.all} SITUATION{counts.all === 1 ? "" : "S"} · {weeks} WEEK
+          {weeks === 1 ? "" : "S"}
         </p>
+        <h1 className="type-h1 mt-2 text-ink">Library</h1>
       </div>
 
-      <LibraryControls
-        initialQuery={q}
-        activePhase={phase}
-        activeTag={tag || null}
-        counts={counts}
-        topTags={topTags}
-      />
+      <div className="mt-4">
+        <LibraryControls
+          initialQuery={q}
+          activePhase={phase}
+          activeTag={tag || null}
+          counts={counts}
+          topTags={topTags}
+        />
+      </div>
 
       {error ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-serif text-base">
-              Something broke while searching.
-            </CardTitle>
-            <CardDescription>{error.message}</CardDescription>
-          </CardHeader>
-        </Card>
+        <div className="mt-6 rounded-md border border-rust bg-rust-wash p-4">
+          <p className="type-label text-rust">Something broke while searching.</p>
+          <p className="type-caption mt-1 text-ink2">{error.message}</p>
+        </div>
       ) : situations.length > 0 ? (
-        <div className="space-y-3">
-          {situations.map((s) => (
-            <Link key={s.id} href={`/app/library/${s.id}`}>
-              <Card className="transition-colors hover:bg-secondary/40">
-                <CardHeader>
-                  <CardDescription className="flex items-center gap-2">
-                    <span className="uppercase tracking-widest">
-                      {s.framework_phase ?? "—"}
-                    </span>
-                    <span>·</span>
-                    <span>
-                      {new Date(s.created_at).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </span>
-                  </CardDescription>
-                  <CardTitle className="font-serif text-lg leading-snug">
-                    {s.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 pt-0">
-                  <p className="line-clamp-2 text-sm text-muted-foreground">
-                    {s.situation}
-                  </p>
-                  {s.tags && s.tags.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      {s.tags.map((t) => (
-                        <span
-                          key={t}
-                          className="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
-                        >
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                </CardContent>
-              </Card>
-            </Link>
+        <div className="mt-4">
+          {situations.map((s, i) => (
+            <SituationRow
+              key={s.id}
+              s={s}
+              isFirst={i === 0}
+            />
           ))}
         </div>
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-serif text-xl">
-              {q || phase || tag ? "Nothing matches that filter." : "Nothing here yet."}
-            </CardTitle>
-            <CardDescription>
-              {q || phase || tag
-                ? "Try a different search, or clear the filters above."
-                : "Finish a check-in and it'll show up here automatically — title, tags, coaching, all of it."}
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        <div className="mt-12 px-1 text-center">
+          <p className="type-h2 text-ink">
+            {q || phase || tag
+              ? "Nothing matches that filter."
+              : "Nothing here yet."}
+          </p>
+          <p className="type-body mt-2 text-graphite">
+            {q || phase || tag
+              ? "Try a different search, or clear the filters above."
+              : "Finish a check-in and it'll show up here automatically."}
+          </p>
+        </div>
       )}
     </div>
+  );
+}
+
+function SituationRow({
+  s,
+  isFirst,
+}: {
+  s: Pick<
+    Situation,
+    "id" | "title" | "situation" | "framework_phase" | "tags" | "created_at"
+  >;
+  isFirst: boolean;
+}) {
+  const date = new Date(s.created_at);
+  const month = date
+    .toLocaleDateString("en-US", { month: "short" })
+    .toUpperCase();
+  const day = date.getDate();
+  return (
+    <Link
+      href={`/app/library/${s.id}`}
+      className={`flex gap-4 border-b border-rule py-4 transition-colors hover:bg-paper2/40 ${
+        isFirst ? "border-t" : ""
+      }`}
+    >
+      <div className="w-10 shrink-0 pt-0.5">
+        <p className="type-cap text-graphite">{month}</p>
+        <p className="type-h2 mt-0.5 leading-none text-ink">{day}</p>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="mb-1.5 flex flex-wrap items-center gap-2">
+          <PhaseTag phase={s.framework_phase} />
+          {(s.tags ?? []).slice(0, 3).map((t) => (
+            <Badge key={t} variant="neutral" size="sm">
+              {t}
+            </Badge>
+          ))}
+        </div>
+        <p className="type-label text-ink">{s.title}</p>
+        <p className="type-body-sm mt-1 line-clamp-2 text-graphite">
+          {s.situation}
+        </p>
+      </div>
+    </Link>
   );
 }

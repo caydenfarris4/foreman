@@ -2,15 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Wordmark } from "@/components/ui/wordmark";
 import { createClient } from "@/lib/supabase/server";
 
 async function login(formData: FormData) {
@@ -37,7 +29,11 @@ async function login(formData: FormData) {
     .eq("id", user.id)
     .maybeSingle();
 
-  redirect(profile?.onboarded_at ? "/app" : "/onboarding");
+  redirect(
+    (profile as { onboarded_at: string | null } | null)?.onboarded_at
+      ? "/app"
+      : "/onboarding",
+  );
 }
 
 export default async function LoginPage({
@@ -47,54 +43,58 @@ export default async function LoginPage({
 }) {
   const params = await searchParams;
   return (
-    <main className="container flex min-h-screen items-center justify-center py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="font-serif text-2xl">Welcome back</CardTitle>
-          <CardDescription>
-            Pick up where you left off. The site's still under construction.
-          </CardDescription>
-        </CardHeader>
-        <form action={login}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-              />
-            </div>
-            {params.error ? (
-              <p className="text-sm text-destructive">{params.error}</p>
-            ) : null}
-          </CardContent>
-          <CardFooter className="flex flex-col items-stretch gap-3">
-            <Button type="submit" className="w-full">
-              Log in
-            </Button>
-            <p className="text-center text-xs text-muted-foreground">
-              No account?{" "}
-              <Link href="/signup" className="underline">
-                Start a free trial
-              </Link>
-              .
-            </p>
-          </CardFooter>
+    <main className="flex min-h-screen items-center justify-center bg-paper px-6 py-12">
+      <div className="w-full max-w-sm">
+        <div className="mb-10 flex justify-center">
+          <Wordmark />
+        </div>
+        <div className="mb-2 h-[2px] w-7 bg-oak" />
+        <p className="type-cap text-oak-dim">RETURNING BUILDER</p>
+        <h1 className="type-h1 mt-2 text-ink">Welcome back.</h1>
+        <p className="type-body mt-3 text-graphite">
+          Pick up where you left off. The site&apos;s still under construction.
+        </p>
+
+        <form action={login} className="mt-8 space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="email" className="type-label text-ink2">
+              Email
+            </label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="password" className="type-label text-ink2">
+              Password
+            </label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+            />
+          </div>
+          {params.error ? (
+            <p className="type-caption text-rust">{params.error}</p>
+          ) : null}
+          <Button type="submit" full size="lg">
+            Log in
+          </Button>
+          <p className="type-caption text-center text-graphite">
+            No account?{" "}
+            <Link href="/signup" className="text-ink2 underline">
+              Start a free trial
+            </Link>
+            .
+          </p>
         </form>
-      </Card>
+      </div>
     </main>
   );
 }

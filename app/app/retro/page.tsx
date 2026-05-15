@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
-  retroDayForSabbath,
   todayInTimezone,
   weekStartFor,
   weekdayInTimezone,
 } from "@/lib/utils";
+import type { Profile } from "@/lib/database.types";
 import { RetroForm } from "./retro-form";
 
 type SearchParams = { week?: string };
@@ -22,22 +22,18 @@ export default async function RetroPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
+  const { data: profileRow } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .single();
+  const profile = profileRow as Profile | null;
   if (!profile) redirect("/onboarding");
 
   const today = todayInTimezone(profile.timezone);
   const weekday = weekdayInTimezone(profile.timezone);
-  const retroDay = retroDayForSabbath(profile.sabbath_day);
-  const isRetroDay = weekday === retroDay;
+  const isRetroDay = weekday === profile.retro_day;
 
-  // Default to the week that just ended (the Monday on or before today,
-  // which represents the current ISO week's start). On retro day this is
-  // the week the user is reflecting on; outside retro day, they can still
-  // open the page to write/edit.
   const weekStart = params.week ?? weekStartFor(today);
 
   const { data: existing } = await supabase
@@ -57,14 +53,17 @@ export default async function RetroPage({
       }
     | null;
 
-  // Pull the week's check-ins for context (read-only display).
+  // Week range.
   const weekEnd = new Date(`${weekStart}T00:00:00Z`);
   weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
   const weekEndISO = weekEnd.toISOString().slice(0, 10);
 
+  // Week number (ISO week).
+  const weekNumber = isoWeek(new Date(`${weekStart}T00:00:00Z`));
+
   const { data: weekCheckins } = await supabase
     .from("daily_checkins")
-    .select("checkin_date, prompt_text, framework_phase")
+    .select("checkin_date, prompt_text, framework_phase, ai_coaching")
     .eq("user_id", user.id)
     .gte("checkin_date", weekStart)
     .lte("checkin_date", weekEndISO)
@@ -74,15 +73,17 @@ export default async function RetroPage({
     checkin_date: string;
     prompt_text: string;
     framework_phase: string | null;
+    ai_coaching: string | null;
   }[];
 
   return (
-    <div className="container max-w-2xl py-10">
+    <div className="px-3 pb-8 pt-4">
       <RetroForm
         weekStart={weekStart}
         weekEnd={weekEndISO}
+        weekNumber={weekNumber}
         isRetroDay={isRetroDay}
-        retroDay={retroDay}
+        retroDay={profile.retro_day}
         existingWins={e?.wins ?? ""}
         existingStruggles={e?.struggles ?? ""}
         existingLessons={e?.lessons ?? ""}
@@ -92,4 +93,14 @@ export default async function RetroPage({
       />
     </div>
   );
+}
+
+function isoWeek(date: Date): number {
+  const d = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+  );
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7);
 }

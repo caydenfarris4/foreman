@@ -25,6 +25,7 @@ export interface Profile {
   current_challenge: string | null;
   current_phase: FrameworkPhase;
   sabbath_day: SabbathDay;
+  retro_day: Exclude<SabbathDay, "none">;
   notification_time: string;
   timezone: string;
   onboarded_at: string | null;

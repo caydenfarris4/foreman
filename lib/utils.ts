@@ -45,11 +45,3 @@ export function weekStartFor(dateISO: string): string {
   return d.toISOString().slice(0, 10);
 }
 
-// Retro day defaults to the day before the user's sabbath, so the rhythm
-// is "reflect, then rest." If the user has no sabbath, default to Sunday.
-export function retroDayForSabbath(sabbath: string): Weekday {
-  if (sabbath === "none") return "sunday";
-  const idx = WEEKDAYS.indexOf(sabbath as Weekday);
-  if (idx === -1) return "sunday";
-  return WEEKDAYS[(idx + 6) % 7];
-}
