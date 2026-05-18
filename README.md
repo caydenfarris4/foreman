@@ -23,7 +23,7 @@ The build follows the order in the original product brief:
 4. ⏳ Weekly retrospective
 5. ✅ Vercel Cron + Resend daily prompt emails
 6. ✅ Stripe billing + paywall after trial
-7. ⏳ Marketing landing page polish
+7. ✅ Marketing landing page polish
 
 ## Local setup
 
