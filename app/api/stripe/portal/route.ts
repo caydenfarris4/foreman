@@ -1,11 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
 import type { Profile } from "@/lib/database.types";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  const limited = await enforceRateLimit(request, "stripe-portal");
+  if (limited) return limited;
+
   const supabase = await createClient();
   const {
     data: { user },

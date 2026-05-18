@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe, priceEnvFor } from "@/lib/stripe";
 import type { Profile } from "@/lib/database.types";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -12,6 +13,9 @@ const BodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const limited = await enforceRateLimit(request, "stripe-checkout");
+  if (limited) return limited;
+
   let body: unknown;
   try {
     body = await request.json();

@@ -8,6 +8,7 @@ import {
   parseCoachingJson,
 } from "@/lib/anthropic";
 import { buildSystemPrompt } from "@/lib/prompts";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -19,6 +20,9 @@ const BodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const limited = await enforceRateLimit(request, "checkin-submit");
+  if (limited) return limited;
+
   let body: unknown;
   try {
     body = await request.json();
