@@ -1,3 +1,1 @@
-{
-  "$comment": "Crons live in .github/workflows/cron-daily-prompts.yml while on Vercel Hobby. To switch back to Vercel cron after upgrading to Pro, add: \"crons\": [{ \"path\": \"/api/cron/daily-prompts\", \"schedule\": \"0 * * * *\" }]"
-}
+{}
