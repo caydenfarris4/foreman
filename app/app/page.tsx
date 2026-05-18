@@ -71,7 +71,13 @@ function daysUntilWeekday(targetWeekday: string, tz: string): number {
   return (target - todayWeekday + 7) % 7;
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string }>;
+}) {
+  const params = await searchParams;
+  const checkoutSuccess = params.checkout === "success";
   const supabase = await createClient();
   const {
     data: { user },
@@ -175,6 +181,15 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-4 px-1 pt-4">
+      {checkoutSuccess ? (
+        <div className="mx-3 rounded-md border border-moss bg-moss-wash p-4">
+          <p className="type-cap text-moss">SUBSCRIPTION ACTIVE</p>
+          <p className="type-body-sm mt-1 text-ink2">
+            You&apos;re locked in. The site stays open as long as you
+            keep building.
+          </p>
+        </div>
+      ) : null}
       <header className="px-3">
         <p className="type-cap text-graphite">{dayLabel}</p>
         <h1 className="type-h1 mt-2 text-ink">

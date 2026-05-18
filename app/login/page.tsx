@@ -21,8 +21,18 @@ async function login(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
-    // Generic message — don't reveal whether the email exists.
     console.error("Login failed", error.message);
+    // Email-not-confirmed is the one auth error that needs a specific
+    // response — otherwise the user gets a misleading "wrong password"
+    // when the real issue is they need to click the email link.
+    // Everything else stays generic to avoid account enumeration.
+    const msg = (error.message ?? "").toLowerCase();
+    const code = (error as { code?: string }).code ?? "";
+    if (code === "email_not_confirmed" || msg.includes("not confirmed")) {
+      redirect(
+        `/login?notice=confirm&email=${encodeURIComponent(email)}`,
+      );
+    }
     redirect("/login?error=Invalid%20email%20or%20password");
   }
 
@@ -47,9 +57,19 @@ async function login(formData: FormData) {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    notice?: string;
+    email?: string;
+  }>;
 }) {
   const params = await searchParams;
+  const showConfirmNotice = params.notice === "confirm";
+  const emailHint =
+    typeof params.email === "string" && params.email.includes("@")
+      ? params.email.slice(0, EMAIL_MAX_LEN)
+      : null;
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-paper px-6 py-12">
       <div className="w-full max-w-sm">
@@ -63,6 +83,23 @@ export default async function LoginPage({
           Pick up where you left off. The site&apos;s still under construction.
         </p>
 
+        {showConfirmNotice ? (
+          <div className="mt-6 rounded-md border border-rule bg-oak-wash p-4">
+            <p className="type-cap text-oak-dim">CONFIRM YOUR EMAIL FIRST</p>
+            <p className="type-body-sm mt-2 text-ink2">
+              {emailHint ? (
+                <>
+                  Open the confirmation email we sent to{" "}
+                  <span className="font-medium text-ink">{emailHint}</span>{" "}
+                  and click the link. Then come back here to log in.
+                </>
+              ) : (
+                "Check your inbox for the confirmation email and click the link before signing in."
+              )}
+            </p>
+          </div>
+        ) : null}
+
         <form action={login} className="mt-8 space-y-4">
           <div className="space-y-2">
             <label htmlFor="email" className="type-label text-ink2">
@@ -74,6 +111,8 @@ export default async function LoginPage({
               type="email"
               autoComplete="email"
               required
+              maxLength={EMAIL_MAX_LEN}
+              defaultValue={emailHint ?? ""}
             />
           </div>
           <div className="space-y-2">
@@ -86,6 +125,7 @@ export default async function LoginPage({
               type="password"
               autoComplete="current-password"
               required
+              maxLength={PASSWORD_MAX_LEN}
             />
           </div>
           {params.error ? (
