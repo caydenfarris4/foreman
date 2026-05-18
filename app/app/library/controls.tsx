@@ -11,6 +11,8 @@ interface Props {
   initialQuery: string;
   activePhase: FrameworkPhase | null;
   activeTag: string | null;
+  activeFrom: string | null;
+  activeTo: string | null;
   counts: Record<FrameworkPhase | "all", number>;
   topTags: [string, number][];
 }
@@ -19,6 +21,8 @@ export function LibraryControls({
   initialQuery,
   activePhase,
   activeTag,
+  activeFrom,
+  activeTo,
   counts,
   topTags,
 }: Props) {
@@ -33,6 +37,8 @@ export function LibraryControls({
       const next = new URLSearchParams(searchParams.toString());
       if (query.trim()) next.set("q", query.trim());
       else next.delete("q");
+      // Any filter change resets pagination to page 1.
+      next.delete("page");
       startTransition(() => router.replace(`/app/library?${next.toString()}`));
     }, 250);
     return () => clearTimeout(handle);
@@ -43,10 +49,16 @@ export function LibraryControls({
     const next = new URLSearchParams(searchParams.toString());
     if (value === null || value === "") next.delete(key);
     else next.set(key, value);
+    next.delete("page");
     startTransition(() => router.replace(`/app/library?${next.toString()}`));
   }
 
-  const hasFilter = !!activePhase || !!activeTag || !!query.trim();
+  const hasFilter =
+    !!activePhase ||
+    !!activeTag ||
+    !!query.trim() ||
+    !!activeFrom ||
+    !!activeTo;
   const phases: FrameworkPhase[] = ["foundation", "framing", "finishing"];
 
   return (
@@ -119,18 +131,55 @@ export function LibraryControls({
         </div>
       </div>
 
-      {hasFilter ? (
-        <button
-          type="button"
-          onClick={() => {
-            setQuery("");
-            startTransition(() => router.replace("/app/library"));
-          }}
+      {/* Date range */}
+      <div className="flex flex-wrap items-center gap-3 border-t border-rule pt-3">
+        <span className="type-cap text-graphite">DATE</span>
+        <label className="flex items-center gap-1.5">
+          <span className="type-caption text-graphite">from</span>
+          <input
+            type="date"
+            value={activeFrom ?? ""}
+            onChange={(e) => setParam("from", e.target.value || null)}
+            className="type-body-sm rounded-sm border border-rule bg-chalk px-2 py-1 text-ink2"
+          />
+        </label>
+        <label className="flex items-center gap-1.5">
+          <span className="type-caption text-graphite">to</span>
+          <input
+            type="date"
+            value={activeTo ?? ""}
+            onChange={(e) => setParam("to", e.target.value || null)}
+            className="type-body-sm rounded-sm border border-rule bg-chalk px-2 py-1 text-ink2"
+          />
+        </label>
+      </div>
+
+      <div className="flex items-center gap-4">
+        {hasFilter ? (
+          <button
+            type="button"
+            onClick={() => {
+              setQuery("");
+              startTransition(() => router.replace("/app/library"));
+            }}
+            className="type-caption text-graphite underline-offset-2 hover:underline"
+          >
+            Clear filters
+          </button>
+        ) : null}
+        <a
+          href="/api/library/export?format=json"
           className="type-caption text-graphite underline-offset-2 hover:underline"
         >
-          Clear filters
-        </button>
-      ) : null}
+          Export JSON
+        </a>
+        <a
+          href="/api/library/export?format=md"
+          className="type-caption text-graphite underline-offset-2 hover:underline"
+        >
+          Export Markdown
+        </a>
+      </div>
     </div>
   );
 }

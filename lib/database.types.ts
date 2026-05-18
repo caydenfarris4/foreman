@@ -60,6 +60,8 @@ export interface WeeklyRetro {
   lessons: string | null;
   ai_synthesis: string | null;
   framework_focus: string | null;
+  skipped: boolean;
+  updated_at: string | null;
   created_at: string;
 }
 
@@ -72,6 +74,24 @@ export interface Situation {
   framework_phase: FrameworkPhase | null;
   tags: string[];
   source_checkin_id: string | null;
+  created_at: string;
+}
+
+export interface SituationNote {
+  id: string;
+  situation_id: string;
+  user_id: string;
+  body: string;
+  created_at: string;
+}
+
+export interface MonthlySynthesis {
+  id: string;
+  user_id: string;
+  month_start: string;
+  ai_summary: string;
+  framework_focus: FrameworkPhase | null;
+  retro_count: number;
   created_at: string;
 }
 
@@ -89,6 +109,8 @@ export interface Database {
       daily_checkins: RowOps<DailyCheckin>;
       weekly_retros: RowOps<WeeklyRetro>;
       situations: RowOps<Situation>;
+      situation_notes: RowOps<SituationNote>;
+      monthly_syntheses: RowOps<MonthlySynthesis>;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

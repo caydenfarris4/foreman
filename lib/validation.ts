@@ -75,3 +75,15 @@ export function sanitizeTag(value: unknown): string {
   const trimmed = value.trim().slice(0, TAG_MAX_LEN);
   return trimmed.replace(/[^a-zA-Z0-9_\- ]/g, "").trim();
 }
+
+// More permissive variant for queries passed to Postgres full-text search
+// via websearch_to_tsquery. Allows letters, digits, whitespace, hyphen
+// (used for negation), apostrophes, and double quotes (used for phrases).
+// websearch_to_tsquery is itself robust to malformed input — it just
+// returns an empty tsquery — so this is defense-in-depth, not the
+// primary guard.
+export function sanitizeFtsQuery(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim().slice(0, SEARCH_QUERY_MAX_LEN);
+  return trimmed.replace(/[^\p{L}\p{N}\s\-'"]/gu, "").trim();
+}

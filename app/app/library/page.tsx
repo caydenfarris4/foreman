@@ -3,19 +3,34 @@ import { Badge } from "@/components/ui/badge";
 import { PhaseTag } from "@/components/ui/phase-tag";
 import { createClient } from "@/lib/supabase/server";
 import type { FrameworkPhase, Situation } from "@/lib/database.types";
-import { sanitizeSearchTerm, sanitizeTag } from "@/lib/validation";
+import {
+  isIsoDate,
+  sanitizeFtsQuery,
+  sanitizeTag,
+} from "@/lib/validation";
 import { LibraryControls } from "./controls";
+
+const PAGE_SIZE = 25;
 
 type SearchParams = {
   q?: string;
   phase?: string;
   tag?: string;
+  from?: string;
+  to?: string;
+  page?: string;
 };
 
 const PHASES: FrameworkPhase[] = ["foundation", "framing", "finishing"];
 
 function isPhase(value: string | undefined): value is FrameworkPhase {
   return value === "foundation" || value === "framing" || value === "finishing";
+}
+
+function parsePage(value: string | undefined): number {
+  const n = Number.parseInt(value ?? "1", 10);
+  if (!Number.isFinite(n) || n < 1 || n > 1000) return 1;
+  return n;
 }
 
 export default async function LibraryPage({
@@ -30,9 +45,13 @@ export default async function LibraryPage({
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const q = sanitizeSearchTerm(params.q);
+  const q = sanitizeFtsQuery(params.q);
   const phase = isPhase(params.phase) ? params.phase : null;
   const tag = sanitizeTag(params.tag);
+  const from = isIsoDate(params.from) ? params.from : null;
+  const to = isIsoDate(params.to) ? params.to : null;
+  const page = parsePage(params.page);
+  const offset = (page - 1) * PAGE_SIZE;
 
   // Phase counts.
   const countQueries = await Promise.all(
@@ -72,58 +91,60 @@ export default async function LibraryPage({
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8);
 
-  // Actual filtered results.
+  // Filtered + paginated results. `range` is inclusive on both ends.
   let query = supabase
     .from("situations")
-    .select("id, title, situation, framework_phase, tags, created_at")
+    .select("id, title, situation, framework_phase, tags, created_at", {
+      count: "exact",
+    })
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(100);
+    .range(offset, offset + PAGE_SIZE - 1);
 
   if (phase) query = query.eq("framework_phase", phase);
   if (tag) query = query.contains("tags", [tag]);
-  if (q) {
-    // q has already been whitelist-sanitized via sanitizeSearchTerm —
-    // no PostgREST delimiters or ILIKE wildcards survive — so direct
-    // interpolation here is safe.
-    query = query.or(
-      `title.ilike.%${q}%,situation.ilike.%${q}%,coaching.ilike.%${q}%`,
-    );
-  }
+  if (from) query = query.gte("created_at", `${from}T00:00:00Z`);
+  if (to) query = query.lte("created_at", `${to}T23:59:59Z`);
+  // Full-text search across title/situation/coaching (indexed via tsvector
+  // in migration 0004). websearch_to_tsquery handles spaces, "phrases",
+  // and -negation safely.
+  if (q) query = query.textSearch("search_vector", q, { type: "websearch" });
 
-  const { data, error } = await query;
+  const { data, error, count: matchCount } = await query;
   const situations = (data ?? []) as Pick<
     Situation,
     "id" | "title" | "situation" | "framework_phase" | "tags" | "created_at"
   >[];
 
-  // Compute the eyebrow stats.
-  const weekStart = new Date();
-  weekStart.setUTCDate(weekStart.getUTCDate() - 14 * 7);
-  const totalWeeks = Math.max(
-    1,
-    Math.ceil(
-      (Date.now() - weekStart.getTime()) / (7 * 24 * 60 * 60 * 1000),
-    ),
-  );
-  // Better: use the date of the oldest situation if we have one.
-  const oldest = situations[situations.length - 1];
-  const weeks = oldest
-    ? Math.max(
-        1,
-        Math.ceil(
-          (Date.now() - new Date(oldest.created_at).getTime()) /
-            (7 * 24 * 60 * 60 * 1000),
-        ),
-      )
-    : totalWeeks;
+  const hasFilter = !!(q || phase || tag || from || to);
+  const totalMatching = matchCount ?? situations.length;
+  const totalPages = Math.max(1, Math.ceil(totalMatching / PAGE_SIZE));
+
+  // Build a base query string for prev/next links so existing filters
+  // ride along.
+  const baseParams = new URLSearchParams();
+  if (q) baseParams.set("q", q);
+  if (phase) baseParams.set("phase", phase);
+  if (tag) baseParams.set("tag", tag);
+  if (from) baseParams.set("from", from);
+  if (to) baseParams.set("to", to);
+  const pageLink = (n: number) => {
+    const p = new URLSearchParams(baseParams);
+    if (n > 1) p.set("page", String(n));
+    const qs = p.toString();
+    return `/app/library${qs ? `?${qs}` : ""}`;
+  };
 
   return (
     <div className="px-3 pb-8 pt-4">
       <div className="px-1">
         <p className="type-cap text-graphite">
-          {counts.all} SITUATION{counts.all === 1 ? "" : "S"} · {weeks} WEEK
-          {weeks === 1 ? "" : "S"}
+          {counts.all} SITUATION{counts.all === 1 ? "" : "S"} ·{" "}
+          {hasFilter
+            ? `${totalMatching} MATCHING`
+            : `${totalSituationsWeeks(situations)} WEEK${
+                totalSituationsWeeks(situations) === 1 ? "" : "S"
+              }`}
         </p>
         <h1 className="type-h1 mt-2 text-ink">Library</h1>
       </div>
@@ -133,6 +154,8 @@ export default async function LibraryPage({
           initialQuery={q}
           activePhase={phase}
           activeTag={tag || null}
+          activeFrom={from}
+          activeTo={to}
           counts={counts}
           topTags={topTags}
         />
@@ -141,27 +164,59 @@ export default async function LibraryPage({
       {error ? (
         <div className="mt-6 rounded-md border border-rust bg-rust-wash p-4">
           <p className="type-label text-rust">Something broke while searching.</p>
-          <p className="type-caption mt-1 text-ink2">{error.message}</p>
+          <p className="type-caption mt-1 text-ink2">
+            Try clearing the filters above and searching again.
+          </p>
         </div>
       ) : situations.length > 0 ? (
-        <div className="mt-4">
-          {situations.map((s, i) => (
-            <SituationRow
-              key={s.id}
-              s={s}
-              isFirst={i === 0}
-            />
-          ))}
-        </div>
+        <>
+          <div className="mt-4">
+            {situations.map((s, i) => (
+              <SituationRow
+                key={s.id}
+                s={s}
+                isFirst={i === 0}
+                highlight={q}
+              />
+            ))}
+          </div>
+          {totalPages > 1 ? (
+            <nav className="mt-6 flex items-center justify-between px-1">
+              {page > 1 ? (
+                <Link
+                  href={pageLink(page - 1)}
+                  className="type-label text-graphite hover:text-ink"
+                >
+                  ← Newer
+                </Link>
+              ) : (
+                <span />
+              )}
+              <span className="type-caption text-graphite">
+                Page {page} of {totalPages}
+              </span>
+              {page < totalPages ? (
+                <Link
+                  href={pageLink(page + 1)}
+                  className="type-label text-graphite hover:text-ink"
+                >
+                  Older →
+                </Link>
+              ) : (
+                <span />
+              )}
+            </nav>
+          ) : null}
+        </>
       ) : (
         <div className="mt-12 px-1 text-center">
           <p className="type-h2 text-ink">
-            {q || phase || tag
+            {hasFilter
               ? "Nothing matches that filter."
               : "Nothing here yet."}
           </p>
           <p className="type-body mt-2 text-graphite">
-            {q || phase || tag
+            {hasFilter
               ? "Try a different search, or clear the filters above."
               : "Finish a check-in and it'll show up here automatically."}
           </p>
@@ -171,15 +226,31 @@ export default async function LibraryPage({
   );
 }
 
+function totalSituationsWeeks(
+  situations: { created_at: string }[],
+): number {
+  const oldest = situations[situations.length - 1];
+  if (!oldest) return 1;
+  return Math.max(
+    1,
+    Math.ceil(
+      (Date.now() - new Date(oldest.created_at).getTime()) /
+        (7 * 24 * 60 * 60 * 1000),
+    ),
+  );
+}
+
 function SituationRow({
   s,
   isFirst,
+  highlight,
 }: {
   s: Pick<
     Situation,
     "id" | "title" | "situation" | "framework_phase" | "tags" | "created_at"
   >;
   isFirst: boolean;
+  highlight: string;
 }) {
   const date = new Date(s.created_at);
   const month = date
@@ -206,11 +277,55 @@ function SituationRow({
             </Badge>
           ))}
         </div>
-        <p className="type-label text-ink">{s.title}</p>
+        <p className="type-label text-ink">
+          <Highlighted text={s.title} highlight={highlight} />
+        </p>
         <p className="type-body-sm mt-1 line-clamp-2 text-graphite">
-          {s.situation}
+          <Highlighted text={s.situation} highlight={highlight} />
         </p>
       </div>
     </Link>
+  );
+}
+
+// Wraps occurrences of each query word (whole word, case-insensitive) in
+// a <mark> for cheap match-highlights. Falls back to plain text if no
+// query. Defensive: the query has already been sanitized via
+// sanitizeFtsQuery so it's safe to feed into a regex character class.
+function Highlighted({
+  text,
+  highlight,
+}: {
+  text: string;
+  highlight: string;
+}) {
+  if (!highlight) return <>{text}</>;
+  // Pull out word-shaped tokens; ignore quotes/negation flags meant for
+  // the FTS engine, not for visual matching.
+  const words = highlight
+    .replace(/["-]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length >= 2);
+  if (words.length === 0) return <>{text}</>;
+  const escaped = words.map((w) =>
+    w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+  );
+  const re = new RegExp(`(${escaped.join("|")})`, "gi");
+  const parts = text.split(re);
+  return (
+    <>
+      {parts.map((p, i) =>
+        re.test(p) ? (
+          <mark
+            key={i}
+            className="rounded-[2px] bg-oak-wash px-0.5 text-ink"
+          >
+            {p}
+          </mark>
+        ) : (
+          <span key={i}>{p}</span>
+        ),
+      )}
+    </>
   );
 }

@@ -82,3 +82,32 @@ export function parseRetroJson(raw: string): RetroJson | null {
   }
   return null;
 }
+
+interface MonthlyJson {
+  summary: string;
+  framework_focus: "foundation" | "framing" | "finishing";
+}
+
+export function parseMonthlyJson(raw: string): MonthlyJson | null {
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const candidate = (fenced ? fenced[1] : raw).trim();
+  const start = candidate.indexOf("{");
+  const end = candidate.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+  try {
+    const parsed = JSON.parse(candidate.slice(start, end + 1));
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      typeof parsed.summary === "string" &&
+      (parsed.framework_focus === "foundation" ||
+        parsed.framework_focus === "framing" ||
+        parsed.framework_focus === "finishing")
+    ) {
+      return parsed as MonthlyJson;
+    }
+  } catch {
+    // fall through
+  }
+  return null;
+}

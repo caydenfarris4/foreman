@@ -19,6 +19,10 @@ const BodySchema = z.object({
   wins: z.string().trim().max(4000),
   struggles: z.string().trim().max(4000),
   lessons: z.string().trim().max(4000),
+  // When true, re-run Claude over edited fields and overwrite the
+  // existing synthesis. Default false preserves the original
+  // "first synthesis wins" behavior.
+  regenerate: z.boolean().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -88,7 +92,10 @@ export async function POST(request: NextRequest) {
     .eq("week_start", week_start)
     .maybeSingle();
 
+  // Short-circuit only when caller didn't ask for a regenerate. Lets
+  // users edit their retro and re-synthesize.
   if (
+    !parsed.data.regenerate &&
     existing &&
     typeof (existing as { ai_synthesis?: string | null }).ai_synthesis === "string" &&
     (existing as { ai_synthesis: string }).ai_synthesis.length > 0

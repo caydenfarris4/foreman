@@ -1,0 +1,52 @@
+name: Weekly retro reminder cron
+
+# Hits /api/cron/weekly-retro on the production deployment once a day at
+# 14:05 UTC. The route itself only emails users whose retro_day matches
+# today in their timezone, so the same daily ping handles every weekday.
+
+on:
+  schedule:
+    - cron: "5 14 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weekly-retro-cron
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger Foreman weekly-retro endpoint
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${APP_URL}" ]; then
+            echo "::error::Repo variable APP_URL is not set"
+            exit 1
+          fi
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "::error::Repo secret CRON_SECRET is not set"
+            exit 1
+          fi
+          response=$(mktemp)
+          headers=$(mktemp)
+          http_code=$(curl --silent --show-error --output "${response}" \
+            --dump-header "${headers}" \
+            --write-out "%{http_code}" --max-time 90 \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/cron/weekly-retro")
+          echo "HTTP ${http_code}"
+          cat "${response}"
+          echo
+          if [ "${http_code}" != "200" ]; then
+            echo "--- response headers ---"
+            cat "${headers}"
+            exit 1
+          fi

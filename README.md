@@ -19,8 +19,8 @@ The build follows the order in the original product brief:
 
 1. ✅ Auth + profiles + onboarding (working end-to-end)
 2. ✅ Daily check-in with Claude integration, auto-library
-3. ⏳ Situation library + retrieval (basic list + detail in place; search next)
-4. ⏳ Weekly retrospective
+3. ✅ Situation library + retrieval (FTS, pagination, edit/delete, notes, export)
+4. ✅ Weekly retrospective (history, monthly synthesis, skip, carry-over, retro-day email)
 5. ✅ Vercel Cron + Resend daily prompt emails
 6. ✅ Stripe billing + paywall after trial
 7. ✅ Marketing landing page polish

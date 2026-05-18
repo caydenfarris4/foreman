@@ -164,6 +164,9 @@ export function RetroForm({
   const [focus, setFocus] = useState(existingFocus);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // True after the user clicked "edit retro" from the site report —
+  // the next submit re-runs Claude.
+  const [isUpdate, setIsUpdate] = useState(false);
 
   function update(id: (typeof STEPS)[number]["id"], v: string) {
     setValues((prev) => ({ ...prev, [id]: v }));
@@ -192,6 +195,7 @@ export function RetroForm({
             wins: values.wins.trim(),
             struggles: values.struggles.trim(),
             lessons: values.lessons.trim(),
+            regenerate: isUpdate,
           }),
         });
         const json = await res.json();
@@ -201,6 +205,7 @@ export function RetroForm({
         }
         setSynthesis(json.synthesis);
         setFocus(json.framework_focus);
+        setIsUpdate(false);
         router.refresh();
       } catch {
         setError("Network problem. Your fields are still here — try again.");
@@ -220,6 +225,11 @@ export function RetroForm({
         synthesis={synthesis}
         focus={focus}
         weekCheckins={weekCheckins}
+        onEdit={() => {
+          setSynthesis(null);
+          setIsUpdate(true);
+          setActiveStep(0);
+        }}
       />
     );
   }
@@ -393,6 +403,7 @@ interface SiteReportProps {
   synthesis: string;
   focus: string | null;
   weekCheckins: WeekCheckin[];
+  onEdit: () => void;
 }
 
 function SiteReport({
@@ -405,6 +416,7 @@ function SiteReport({
   synthesis,
   focus,
   weekCheckins,
+  onEdit,
 }: SiteReportProps) {
   const winsCount = wins.trim() ? wins.trim().split(/[.\n]+/).filter((s) => s.trim().length > 4).length : 0;
   const strugglesCount = struggles.trim()
@@ -490,6 +502,22 @@ function SiteReport({
         ) : null}
       </div>
 
+      <div className="flex items-center justify-center gap-4">
+        <button
+          type="button"
+          onClick={onEdit}
+          className="type-label text-graphite underline-offset-2 hover:text-ink hover:underline"
+        >
+          Edit & re-synthesize
+        </button>
+        <span className="type-caption text-graphite">·</span>
+        <a
+          href="/app/retro/history"
+          className="type-label text-graphite underline-offset-2 hover:text-ink hover:underline"
+        >
+          See all retros
+        </a>
+      </div>
       <p className="type-caption text-center text-graphite">
         Saved. See you next week.
       </p>

@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { PhaseTag } from "@/components/ui/phase-tag";
 import { createClient } from "@/lib/supabase/server";
-import type { Situation } from "@/lib/database.types";
+import type { Situation, SituationNote } from "@/lib/database.types";
 import { isUuid } from "@/lib/validation";
+import { SituationActions } from "./actions";
 
 function BackIcon() {
   return (
@@ -75,6 +76,18 @@ export default async function SituationDetailPage({
       .maybeSingle();
     promptText = (checkin as { prompt_text: string } | null)?.prompt_text ?? null;
   }
+
+  // Notes attached to this situation.
+  const { data: notesData } = await supabase
+    .from("situation_notes")
+    .select("id, body, created_at")
+    .eq("situation_id", situation.id)
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true });
+  const notes = (notesData ?? []) as Pick<
+    SituationNote,
+    "id" | "body" | "created_at"
+  >[];
 
   // Related.
   let related: Pick<Situation, "id" | "title" | "framework_phase" | "created_at">[] = [];
@@ -188,6 +201,16 @@ export default async function SituationDetailPage({
             </p>
           ))}
         </div>
+      </div>
+
+      <div className="mt-6 px-1">
+        <SituationActions
+          situationId={situation.id}
+          initialTitle={situation.title}
+          initialSituation={situation.situation}
+          initialTags={situation.tags ?? []}
+          initialNotes={notes}
+        />
       </div>
 
       {related.length > 0 ? (
