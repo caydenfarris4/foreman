@@ -40,7 +40,9 @@ jobs:
             exit 1
           fi
           response=$(mktemp)
+          headers=$(mktemp)
           http_code=$(curl --silent --show-error --output "${response}" \
+            --dump-header "${headers}" \
             --write-out "%{http_code}" --max-time 90 \
             -H "Authorization: Bearer ${CRON_SECRET}" \
             "${APP_URL}/api/cron/daily-prompts")
@@ -48,5 +50,7 @@ jobs:
           cat "${response}"
           echo
           if [ "${http_code}" != "200" ]; then
+            echo "--- response headers ---"
+            cat "${headers}"
             exit 1
           fi
