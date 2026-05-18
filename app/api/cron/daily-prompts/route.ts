@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getFromAddress, getResend } from "@/lib/resend";
 import {
@@ -50,13 +51,27 @@ function dateInTz(timezone: string, now: Date): string {
 }
 
 export async function GET(request: NextRequest) {
-  // Vercel Cron uses `Authorization: Bearer ${CRON_SECRET}`.
+  // GitHub Actions (and Vercel Cron, if you switch back) sends
+  // `Authorization: Bearer ${CRON_SECRET}`. Fail closed: if CRON_SECRET
+  // is unset in this environment, refuse to run rather than letting any
+  // caller trigger emails to every user.
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const auth = request.headers.get("authorization") ?? "";
-    if (auth !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (!cronSecret) {
+    console.error("Cron: CRON_SECRET is not configured");
+    return NextResponse.json(
+      { error: "Server misconfiguration" },
+      { status: 500 },
+    );
+  }
+  const auth = request.headers.get("authorization") ?? "";
+  const expected = `Bearer ${cronSecret}`;
+  const provided = Buffer.from(auth);
+  const expectedBuf = Buffer.from(expected);
+  const ok =
+    provided.length === expectedBuf.length &&
+    timingSafeEqual(provided, expectedBuf);
+  if (!ok) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const supabase = createAdminClient();

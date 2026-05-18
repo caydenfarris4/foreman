@@ -21,7 +21,9 @@ async function login(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}`);
+    // Generic message — don't reveal whether the email exists.
+    console.error("Login failed", error.message);
+    redirect("/login?error=Invalid%20email%20or%20password");
   }
 
   const {

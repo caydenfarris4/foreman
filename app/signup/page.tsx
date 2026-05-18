@@ -30,7 +30,12 @@ async function signup(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({ email, password });
   if (error) {
-    redirect(`/signup?error=${encodeURIComponent(error.message)}`);
+    // Log the real reason server-side; show a generic message to the
+    // browser so provider error text doesn't leak via URL / Referer.
+    console.error("Signup failed", error.message);
+    redirect(
+      "/signup?error=Could%20not%20create%20your%20account.%20Try%20again%20or%20use%20a%20different%20email.",
+    );
   }
 
   const { data } = await supabase.auth.getUser();

@@ -66,10 +66,16 @@ export async function completeOnboarding(formData: FormData) {
   const raw = Object.fromEntries(formData.entries());
   const parsed = OnboardingSchema.safeParse(raw);
   if (!parsed.success) {
-    const message = parsed.error.issues
-      .map((issue) => `${issue.path.join(".") || "field"}: ${issue.message}`)
-      .join("; ");
-    redirect(`/onboarding?error=${encodeURIComponent(message)}`);
+    // Don't leak raw zod field paths / messages — they describe the
+    // internal schema. The form already has client-side validation
+    // for the common cases.
+    console.error(
+      "Onboarding validation failed",
+      parsed.error.issues.map((i) => i.path.join(".")),
+    );
+    redirect(
+      "/onboarding?error=Please%20check%20every%20field%20and%20try%20again.",
+    );
   }
 
   const d = parsed.data;
@@ -90,7 +96,10 @@ export async function completeOnboarding(formData: FormData) {
     .eq("id", user.id);
 
   if (error) {
-    redirect(`/onboarding?error=${encodeURIComponent(error.message)}`);
+    console.error("Onboarding save failed", error.message);
+    redirect(
+      "/onboarding?error=Could%20not%20save%20your%20profile.%20Please%20try%20again.",
+    );
   }
 
   redirect("/app");

@@ -39,3 +39,11 @@ export function isPaywalled(access: AccessState): boolean {
     access.state === "past_due"
   );
 }
+
+// True when the user is allowed to use the AI-backed endpoints. Mirrors
+// the UI paywall but enforced server-side on the routes that cost money
+// (Claude calls). Trial + active subscriptions pass; expired/past-due/
+// churned do not.
+export function canUseAi(access: AccessState): boolean {
+  return access.state === "active" || access.state === "trialing";
+}

@@ -10,21 +10,35 @@ const WINDOW = "15 m";
 let limiter: Ratelimit | null = null;
 let warned = false;
 
-function getLimiter(): Ratelimit | null {
-  if (limiter) return limiter;
+type LimiterStatus =
+  | { kind: "ready"; limiter: Ratelimit }
+  | { kind: "disabled" } // dev/local without Upstash configured
+  | { kind: "misconfigured" }; // production missing env vars — fail closed
+
+function getLimiter(): LimiterStatus {
+  if (limiter) return { kind: "ready", limiter };
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) {
+    // In production, missing env vars means rate-limit protection is
+    // silently absent — refuse the request instead. In dev / preview /
+    // CI, fail open with a warning so local work isn't broken.
+    if (process.env.NODE_ENV === "production") {
+      if (!warned) {
+        console.error(
+          "Rate limiting MISCONFIGURED in production: UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN not set. Requests will be rejected.",
+        );
+        warned = true;
+      }
+      return { kind: "misconfigured" };
+    }
     if (!warned) {
-      // Fail-open in dev / unconfigured envs so local work isn't broken.
-      // In production the env vars MUST be set or rate limiting silently
-      // does nothing.
       console.warn(
         "Rate limiting disabled: UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN not set",
       );
       warned = true;
     }
-    return null;
+    return { kind: "disabled" };
   }
   const redis = new Redis({ url, token });
   limiter = new Ratelimit({
@@ -33,7 +47,7 @@ function getLimiter(): Ratelimit | null {
     analytics: false,
     prefix: "foreman:rl",
   });
-  return limiter;
+  return { kind: "ready", limiter };
 }
 
 function clientIp(request: NextRequest): string {
@@ -54,10 +68,16 @@ export async function enforceRateLimit(
   request: NextRequest,
   bucket: string,
 ): Promise<NextResponse | null> {
-  const lim = getLimiter();
-  if (!lim) return null;
+  const status = getLimiter();
+  if (status.kind === "disabled") return null; // dev only
+  if (status.kind === "misconfigured") {
+    return NextResponse.json(
+      { error: "Service temporarily unavailable" },
+      { status: 503 },
+    );
+  }
   const key = `${bucket}:${clientIp(request)}`;
-  const { success, limit, remaining, reset } = await lim.limit(key);
+  const { success, limit, remaining, reset } = await status.limiter.limit(key);
   const headers = {
     "X-RateLimit-Limit": String(limit),
     "X-RateLimit-Remaining": String(remaining),

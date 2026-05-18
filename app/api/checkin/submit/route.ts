@@ -9,6 +9,7 @@ import {
 } from "@/lib/anthropic";
 import { buildSystemPrompt } from "@/lib/prompts";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { accessFor, canUseAi } from "@/lib/billing";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -55,6 +56,15 @@ export async function POST(request: NextRequest) {
 
   if (profileError || !profile) {
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+  }
+
+  // Mirror the UI paywall on the server. A churned/expired user can't
+  // bypass it by POSTing directly — Claude calls cost money.
+  if (!canUseAi(accessFor(profile))) {
+    return NextResponse.json(
+      { error: "Subscription required" },
+      { status: 402 },
+    );
   }
 
   // Don't re-coach a completed check-in.
