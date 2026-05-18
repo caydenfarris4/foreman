@@ -310,12 +310,16 @@ function Highlighted({
   const escaped = words.map((w) =>
     w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
   );
+  // Capturing group with /g flag: split() interleaves the captured
+  // matches at odd indices, so we mark by index parity instead of
+  // re.test() — which has stateful lastIndex and would give wrong
+  // results after split().
   const re = new RegExp(`(${escaped.join("|")})`, "gi");
   const parts = text.split(re);
   return (
     <>
       {parts.map((p, i) =>
-        re.test(p) ? (
+        i % 2 === 1 ? (
           <mark
             key={i}
             className="rounded-[2px] bg-oak-wash px-0.5 text-ink"

@@ -23,19 +23,21 @@ function weekdayInTz(timezone: string, now: Date): string {
 }
 
 function weekStartInTz(timezone: string, now: Date): string {
-  // ISO week start = Monday. We use a Mon-anchored week the same way
-  // the rest of the app does (lib/utils.weekStartFor). Return YYYY-MM-DD.
-  const local = new Date(
-    new Date(now.toLocaleString("en-US", { timeZone: timezone })).getTime(),
-  );
-  const day = local.getDay() === 0 ? 7 : local.getDay(); // Sun -> 7
-  local.setDate(local.getDate() - (day - 1));
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "UTC",
+  // Get the calendar date in the user's timezone as YYYY-MM-DD, then
+  // step back to the Monday on or before it. Mirrors lib/utils
+  // todayInTimezone + weekStartFor, but parameterized by `now` so the
+  // whole cron sees a single point in time.
+  const localDate = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(local);
+  }).format(now);
+  const d = new Date(`${localDate}T00:00:00Z`);
+  const dow = d.getUTCDay(); // 0=Sun..6=Sat
+  const offset = (dow + 6) % 7; // days since most recent Monday
+  d.setUTCDate(d.getUTCDate() - offset);
+  return d.toISOString().slice(0, 10);
 }
 
 function weekRangeLabel(weekStart: string): string {
