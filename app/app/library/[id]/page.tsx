@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { PhaseTag } from "@/components/ui/phase-tag";
 import { createClient } from "@/lib/supabase/server";
 import type { Situation } from "@/lib/database.types";
+import { isUuid } from "@/lib/validation";
 
 function BackIcon() {
   return (
@@ -44,6 +45,10 @@ export default async function SituationDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  // Reject anything that isn't a UUID before touching the DB — keeps
+  // garbage input from ever reaching Postgres.
+  if (!isUuid(id)) notFound();
+
   const supabase = await createClient();
   const {
     data: { user },

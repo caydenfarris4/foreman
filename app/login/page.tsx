@@ -4,12 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Wordmark } from "@/components/ui/wordmark";
 import { createClient } from "@/lib/supabase/server";
+import { EMAIL_MAX_LEN, PASSWORD_MAX_LEN } from "@/lib/validation";
 
 async function login(formData: FormData) {
   "use server";
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  if (!email || !password) {
+  if (
+    !email ||
+    email.length > EMAIL_MAX_LEN ||
+    !password ||
+    password.length > PASSWORD_MAX_LEN
+  ) {
     redirect("/login?error=Email%20and%20password%20required");
   }
   const supabase = await createClient();

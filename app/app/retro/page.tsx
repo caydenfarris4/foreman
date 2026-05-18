@@ -6,6 +6,7 @@ import {
   weekdayInTimezone,
 } from "@/lib/utils";
 import type { Profile } from "@/lib/database.types";
+import { isIsoDate } from "@/lib/validation";
 import { RetroForm } from "./retro-form";
 
 type SearchParams = { week?: string };
@@ -34,7 +35,9 @@ export default async function RetroPage({
   const weekday = weekdayInTimezone(profile.timezone);
   const isRetroDay = weekday === profile.retro_day;
 
-  const weekStart = params.week ?? weekStartFor(today);
+  // ?week= must be ISO date or we fall back. Don't let arbitrary input
+  // reach the DB or the Date constructor.
+  const weekStart = isIsoDate(params.week) ? params.week : weekStartFor(today);
 
   const { data: existing } = await supabase
     .from("weekly_retros")

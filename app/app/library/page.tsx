@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { PhaseTag } from "@/components/ui/phase-tag";
 import { createClient } from "@/lib/supabase/server";
 import type { FrameworkPhase, Situation } from "@/lib/database.types";
+import { sanitizeSearchTerm, sanitizeTag } from "@/lib/validation";
 import { LibraryControls } from "./controls";
 
 type SearchParams = {
@@ -29,9 +30,9 @@ export default async function LibraryPage({
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const q = (params.q ?? "").trim();
+  const q = sanitizeSearchTerm(params.q);
   const phase = isPhase(params.phase) ? params.phase : null;
-  const tag = (params.tag ?? "").trim();
+  const tag = sanitizeTag(params.tag);
 
   // Phase counts.
   const countQueries = await Promise.all(
@@ -82,9 +83,11 @@ export default async function LibraryPage({
   if (phase) query = query.eq("framework_phase", phase);
   if (tag) query = query.contains("tags", [tag]);
   if (q) {
-    const safe = q.replace(/[%_]/g, (m) => `\\${m}`);
+    // q has already been whitelist-sanitized via sanitizeSearchTerm —
+    // no PostgREST delimiters or ILIKE wildcards survive — so direct
+    // interpolation here is safe.
     query = query.or(
-      `title.ilike.%${safe}%,situation.ilike.%${safe}%,coaching.ilike.%${safe}%`,
+      `title.ilike.%${q}%,situation.ilike.%${q}%,coaching.ilike.%${q}%`,
     );
   }
 

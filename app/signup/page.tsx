@@ -4,14 +4,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Wordmark } from "@/components/ui/wordmark";
 import { createClient } from "@/lib/supabase/server";
+import {
+  EMAIL_MAX_LEN,
+  PASSWORD_MAX_LEN,
+  PASSWORD_MIN_LEN,
+} from "@/lib/validation";
 
 async function signup(formData: FormData) {
   "use server";
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  if (!email || password.length < 8) {
+  if (
+    !email ||
+    email.length > EMAIL_MAX_LEN ||
+    !email.includes("@") ||
+    password.length < PASSWORD_MIN_LEN ||
+    password.length > PASSWORD_MAX_LEN
+  ) {
     redirect(
-      "/signup?error=Use%20a%20password%20at%20least%208%20characters%20long",
+      `/signup?error=${encodeURIComponent(
+        `Use a valid email and a password between ${PASSWORD_MIN_LEN} and ${PASSWORD_MAX_LEN} characters.`,
+      )}`,
     );
   }
   const supabase = await createClient();
