@@ -1,0 +1,52 @@
+name: Daily prompt cron
+
+# Hits /api/cron/daily-prompts on the production deployment every hour.
+# Replaces the Vercel cron entry while on the Hobby tier (Hobby only
+# permits daily schedules). When you upgrade to Vercel Pro, restore the
+# crons block in vercel.json and either delete this workflow or set
+# its 'on' trigger to workflow_dispatch only.
+
+on:
+  schedule:
+    # Every hour at :05 — GitHub Actions scheduled runs are best-effort
+    # and tend to jitter at :00. Picking :05 cuts down on missed slots.
+    - cron: "5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-prompt-cron
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger Foreman daily-prompts endpoint
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${APP_URL}" ]; then
+            echo "::error::Repo variable APP_URL is not set"
+            exit 1
+          fi
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "::error::Repo secret CRON_SECRET is not set"
+            exit 1
+          fi
+          response=$(mktemp)
+          http_code=$(curl --silent --show-error --output "${response}" \
+            --write-out "%{http_code}" --max-time 90 \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/cron/daily-prompts")
+          echo "HTTP ${http_code}"
+          cat "${response}"
+          echo
+          if [ "${http_code}" != "200" ]; then
+            exit 1
+          fi
