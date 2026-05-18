@@ -71,7 +71,13 @@ function daysUntilWeekday(targetWeekday: string, tz: string): number {
   return (target - todayWeekday + 7) % 7;
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string }>;
+}) {
+  const params = await searchParams;
+  const checkoutFlag = params.checkout;
   const supabase = await createClient();
   const {
     data: { user },
@@ -175,6 +181,20 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-4 px-1 pt-4">
+      {checkoutFlag === "success" || checkoutFlag === "cohort_success" ? (
+        <div className="mx-3 rounded-md border border-moss bg-moss-wash p-4">
+          <p className="type-cap text-moss">
+            {checkoutFlag === "cohort_success"
+              ? "COHORT PAYMENT CONFIRMED"
+              : "SUBSCRIPTION ACTIVE"}
+          </p>
+          <p className="type-body-sm mt-1 text-ink2">
+            {checkoutFlag === "cohort_success"
+              ? "You're enrolled. Watch your email for the cohort welcome packet — schedule, prep materials, and how to show up to session 01."
+              : "You're locked in. The site stays open as long as you keep building."}
+          </p>
+        </div>
+      ) : null}
       <header className="px-3">
         <p className="type-cap text-graphite">{dayLabel}</p>
         <h1 className="type-h1 mt-2 text-ink">

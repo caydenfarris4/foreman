@@ -14,10 +14,14 @@ import { CheckoutButton } from "./checkout-button";
 
 export default async function CohortApplyPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ checkout?: string }>;
 }) {
   const { slug } = await params;
+  const sp = await searchParams;
+  const checkoutCancelled = sp.checkout === "cancelled";
   if (!isValidSlug(slug)) notFound();
 
   const supabase = await createClient();
@@ -95,6 +99,18 @@ export default async function CohortApplyPage({
           to complete payment ({formatCohortPrice(price.cents)}
           {price.isDiscounted ? " — subscriber price" : ""}).
         </p>
+
+        {checkoutCancelled ? (
+          <div className="mt-6 rounded-md border border-rule bg-paper2/40 p-4">
+            <p className="type-cap text-graphite">CHECKOUT CANCELLED</p>
+            <p className="type-body-sm mt-1 text-ink2">
+              No charge — nothing happened. Your accepted application is
+              still good for the rest of your 7-day window. Hit
+              &ldquo;Pay &amp; enroll&rdquo; below whenever you&apos;re
+              ready.
+            </p>
+          </div>
+        ) : null}
 
         {existing ? (
           <ExistingState
