@@ -77,7 +77,7 @@ export function OnboardingWizard({ email, error }: Props) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     name: "",
-    current_role: "",
+    role_title: "",
     months_managing: "" as "" | (typeof MONTH_OPTIONS)[number]["value"],
     team_size_bucket: "" as "" | (typeof TEAM_VALUES)[number],
     challenge: "" as "" | (typeof CHALLENGES)[number]["id"],
@@ -99,7 +99,7 @@ export function OnboardingWizard({ email, error }: Props) {
       case 1:
         return (
           form.name.trim().length > 0 &&
-          form.current_role.trim().length > 0 &&
+          form.role_title.trim().length > 0 &&
           form.months_managing !== "" &&
           form.team_size_bucket !== ""
         );
@@ -144,7 +144,7 @@ export function OnboardingWizard({ email, error }: Props) {
       >
         {/* Hidden snapshot — single submit on step 3 carries everything */}
         <input type="hidden" name="name" value={form.name} />
-        <input type="hidden" name="current_role" value={form.current_role} />
+        <input type="hidden" name="role_title" value={form.role_title} />
         <input type="hidden" name="months_managing" value={form.months_managing} />
         <input
           type="hidden"
@@ -191,8 +191,8 @@ export function OnboardingWizard({ email, error }: Props) {
               </label>
               <Input
                 id="role"
-                value={form.current_role}
-                onChange={(e) => update("current_role", e.target.value)}
+                value={form.role_title}
+                onChange={(e) => update("role_title", e.target.value)}
                 placeholder="e.g. Engineering Manager, Store Lead"
               />
             </div>

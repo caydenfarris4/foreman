@@ -18,7 +18,7 @@ const challenge = z.enum([
 
 const OnboardingSchema = z.object({
   name: z.string().trim().min(1).max(80),
-  current_role: z.string().trim().min(1).max(120),
+  role_title: z.string().trim().min(1).max(120),
   months_managing: months,
   team_size_bucket: teamSize,
   challenge,
@@ -78,7 +78,7 @@ export async function completeOnboarding(formData: FormData) {
     .from("profiles")
     .update({
       name: d.name,
-      current_role: d.current_role,
+      role_title: d.role_title,
       promoted_at: dateMonthsAgo(MONTHS_AGO_MIDPOINT[d.months_managing]),
       team_size: TEAM_SIZE_MIDPOINT[d.team_size_bucket],
       current_challenge: CHALLENGE_LABEL[d.challenge],

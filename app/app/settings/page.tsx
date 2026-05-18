@@ -102,7 +102,7 @@ export default async function SettingsPage() {
         <p className="type-cap text-graphite">PROFILE · {user.email}</p>
         <dl className="mt-4 grid grid-cols-1 divide-y divide-rule">
           <Row label="Name" value={profile.name} />
-          <Row label="Role" value={profile.current_role} />
+          <Row label="Role" value={profile.role_title} />
           <Row label="Team size" value={profile.team_size?.toString()} />
           <Row label="Started managing" value={profile.promoted_at} />
           <Row label="Current focus" value={profile.current_challenge} />

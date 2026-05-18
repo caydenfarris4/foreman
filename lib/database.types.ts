@@ -17,7 +17,7 @@ export interface Profile {
   id: string;
   email: string;
   name: string | null;
-  current_role: string | null;
+  role_title: string | null;
   promoted_at: string | null;
   team_size: number | null;
   team_context: string | null;

@@ -8,7 +8,7 @@ create table if not exists profiles (
   id uuid primary key references auth.users on delete cascade,
   email text not null,
   name text,
-  current_role text,
+  role_title text,
   promoted_at date,
   team_size int,
   team_context text,

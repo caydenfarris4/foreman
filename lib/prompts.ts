@@ -20,7 +20,7 @@ THE FRAMEWORK:
 
 USER CONTEXT (injected per request):
 - Name: {name}
-- Role: {current_role}
+- Role: {role_title}
 - Promoted: {promoted_at}
 - Team size: {team_size}
 - Team context: {team_context}
@@ -51,7 +51,7 @@ CONSTRAINTS:
 export function buildSystemPrompt(profile: Pick<
   Profile,
   | "name"
-  | "current_role"
+  | "role_title"
   | "promoted_at"
   | "team_size"
   | "team_context"
@@ -59,7 +59,7 @@ export function buildSystemPrompt(profile: Pick<
 >): string {
   return COACHING_SYSTEM_PROMPT
     .replace("{name}", profile.name ?? "(not set)")
-    .replace("{current_role}", profile.current_role ?? "(not set)")
+    .replace("{role_title}", profile.role_title ?? "(not set)")
     .replace("{promoted_at}", profile.promoted_at ?? "(not set)")
     .replace("{team_size}", profile.team_size != null ? String(profile.team_size) : "(not set)")
     .replace("{team_context}", profile.team_context ?? "(not set)")
@@ -75,7 +75,7 @@ No therapy-speak.
 
 USER CONTEXT (injected per request):
 - Name: {name}
-- Role: {current_role}
+- Role: {role_title}
 - Team size: {team_size}
 - Current challenge: {current_challenge}
 
@@ -99,11 +99,11 @@ Never start with "It sounds like" or "I hear you." Get to the substance.`;
 
 export function buildRetroSystemPrompt(profile: Pick<
   Profile,
-  "name" | "current_role" | "team_size" | "current_challenge"
+  "name" | "role_title" | "team_size" | "current_challenge"
 >): string {
   return RETRO_SYSTEM_PROMPT
     .replace("{name}", profile.name ?? "(not set)")
-    .replace("{current_role}", profile.current_role ?? "(not set)")
+    .replace("{role_title}", profile.role_title ?? "(not set)")
     .replace("{team_size}", profile.team_size != null ? String(profile.team_size) : "(not set)")
     .replace("{current_challenge}", profile.current_challenge ?? "(not set)");
 }
