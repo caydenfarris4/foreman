@@ -10,6 +10,7 @@ interface AppShellProps {
   initials: string;
   signOut: () => Promise<void>;
   trialBanner: { daysLeft: number } | null;
+  isAdmin: boolean;
   children: React.ReactNode;
 }
 
@@ -76,6 +77,7 @@ export function AppShell({
   initials,
   signOut,
   trialBanner,
+  isAdmin,
   children,
 }: AppShellProps) {
   const pathname = usePathname();
@@ -119,6 +121,22 @@ export function AppShell({
                 >
                   Settings
                 </Link>
+                <Link
+                  href="/cohorts"
+                  onClick={() => setMenuOpen(false)}
+                  className="block px-4 py-2.5 text-[14px] text-ink2 hover:bg-paper2"
+                >
+                  Cohorts
+                </Link>
+                {isAdmin ? (
+                  <Link
+                    href="/admin"
+                    onClick={() => setMenuOpen(false)}
+                    className="block px-4 py-2.5 text-[14px] text-oak-dim hover:bg-paper2"
+                  >
+                    Admin
+                  </Link>
+                ) : null}
                 <form action={signOut}>
                   <button
                     type="submit"

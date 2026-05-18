@@ -10,6 +10,7 @@ import {
 import { buildRetroSystemPrompt } from "@/lib/prompts";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { accessFor, canUseAi } from "@/lib/billing";
+import { hasActiveCohortAccess } from "@/lib/cohorts";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -76,13 +77,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });
   }
 
-  // Mirror the UI paywall on the server. Same reasoning as the
-  // check-in route — Claude calls cost money.
+  // Same paywall as check-in — Claude calls cost money. Cohort
+  // participants are honored through their post-cohort window.
   if (!canUseAi(accessFor(profile))) {
-    return NextResponse.json(
-      { error: "Subscription required" },
-      { status: 402 },
-    );
+    const cohortBypass = await hasActiveCohortAccess(supabase, user.id);
+    if (!cohortBypass) {
+      return NextResponse.json(
+        { error: "Subscription required" },
+        { status: 402 },
+      );
+    }
   }
 
   const { data: existing } = await supabase

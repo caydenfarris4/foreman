@@ -10,6 +10,7 @@ import {
 import { buildSystemPrompt } from "@/lib/prompts";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { accessFor, canUseAi } from "@/lib/billing";
+import { hasActiveCohortAccess } from "@/lib/cohorts";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -59,12 +60,16 @@ export async function POST(request: NextRequest) {
   }
 
   // Mirror the UI paywall on the server. A churned/expired user can't
-  // bypass it by POSTing directly — Claude calls cost money.
+  // bypass it by POSTing directly — Claude calls cost money. Cohort
+  // participants get free access through their post-cohort window.
   if (!canUseAi(accessFor(profile))) {
-    return NextResponse.json(
-      { error: "Subscription required" },
-      { status: 402 },
-    );
+    const cohortBypass = await hasActiveCohortAccess(supabase, user.id);
+    if (!cohortBypass) {
+      return NextResponse.json(
+        { error: "Subscription required" },
+        { status: 402 },
+      );
+    }
   }
 
   // Don't re-coach a completed check-in.
