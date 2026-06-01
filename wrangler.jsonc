@@ -1,0 +1,30 @@
+{
+  // Cloudflare Workers config for the OpenNext-built Next.js app.
+  // Build with `npm run preview` (local) or `npm run deploy` (Cloudflare).
+  // Docs: https://opennext.js.org/cloudflare
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "foreman",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-08-01",
+  // nodejs_compat: required — the app uses node:crypto (cron auth) and the
+  //   Stripe / Anthropic / Supabase SDKs, which expect Node built-ins.
+  // global_fetch_strictly_public: OpenNext recommends this so server-side
+  //   fetch() to the app's own URL goes back out through the edge.
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  }
+
+  // ---- Optional, add when you create the resources in your CF account ----
+  //
+  // Incremental/ISR cache in R2 (recommended once you have cached routes):
+  //   1. `npx wrangler r2 bucket create foreman-cache`
+  //   2. uncomment below, then enable r2IncrementalCache in open-next.config.ts
+  // "r2_buckets": [
+  //   { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "foreman-cache" }
+  // ],
+}

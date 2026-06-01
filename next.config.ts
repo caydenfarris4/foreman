@@ -1,4 +1,9 @@
 import type { NextConfig } from "next";
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+
+// Lets `next dev` reach Cloudflare bindings (e.g. the R2 cache) via
+// getCloudflareContext(). Dev-only; no effect on the production build.
+initOpenNextCloudflareForDev();
 
 const SECURITY_HEADERS = [
   // Disallow framing anywhere — no part of the app is meant to be embedded.
