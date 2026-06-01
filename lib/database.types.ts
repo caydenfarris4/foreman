@@ -1,6 +1,14 @@
 // Hand-written types mirroring supabase/migrations/0001_init.sql.
 // Regenerate with `supabase gen types typescript` once the project is linked.
 
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json }
+  | Json[];
+
 export type FrameworkPhase = "foundation" | "framing" | "finishing";
 export type SabbathDay =
   | "sunday"
@@ -95,6 +103,153 @@ export interface MonthlySynthesis {
   created_at: string;
 }
 
+// ---- Growth Inspection spine (migration 0006). ----------------------------
+// Canonical principle/layer unions live in lib/inspection/principles.ts; these
+// mirror the DB check constraints. Kept as literal unions here so the DB types
+// stay self-contained.
+
+export type PrincipleKey =
+  | "foundation"
+  | "framing"
+  | "mentorship"
+  | "reconciliation"
+  | "belief"
+  | "patience"
+  | "integrity"
+  | "refinement"
+  | "culture"
+  | "discernment"
+  | "pressure";
+export type InspectionLayer = "foundation" | "frame" | "finish";
+export type GoalLevel =
+  | "ten_year"
+  | "five_year"
+  | "six_month"
+  | "monthly"
+  | "weekly"
+  | "daily";
+export type GoalStatus = "open" | "done" | "dropped";
+export type CascadeCheckinType = "daily" | "weekly" | "monthly";
+export type InspectionQuestionType = "slider" | "frequency" | "scenario";
+export type InspectionStatus = "in_progress" | "scoring" | "drafted" | "sent";
+export type InspectionFlagStatus = "none" | "routed" | "cleared";
+export type MappingSource = "ai" | "user";
+export type ReviewStatus =
+  | "pending"
+  | "approved"
+  | "edited"
+  | "noted"
+  | "resolved";
+
+export interface GrowthPlan {
+  id: string;
+  user_id: string;
+  version: number;
+  ten_year_text: string;
+  five_year_text: string | null;
+  six_month_milestone: string | null;
+  is_current: boolean;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface PrincipleSelection {
+  id: string;
+  user_id: string;
+  plan_id: string | null;
+  principle: PrincipleKey;
+  created_at: string;
+}
+
+export interface PrincipleMapping {
+  id: string;
+  user_id: string;
+  plan_id: string | null;
+  principle: PrincipleKey;
+  layer: InspectionLayer | null;
+  ai_rationale: string | null;
+  source: MappingSource;
+  confirmed: boolean;
+  created_at: string;
+}
+
+export interface GrowthGoal {
+  id: string;
+  user_id: string;
+  plan_id: string | null;
+  level: GoalLevel;
+  parent_goal_id: string | null;
+  body: string;
+  status: GoalStatus;
+  period_start: string | null;
+  period_end: string | null;
+  ladders_up: boolean;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface CascadeCheckin {
+  id: string;
+  user_id: string;
+  checkin_type: CascadeCheckinType;
+  period_date: string;
+  reflection: string | null;
+  created_at: string;
+}
+
+export interface CascadeCheckinGoal {
+  id: string;
+  user_id: string;
+  checkin_id: string;
+  goal_id: string;
+  completed: boolean;
+  created_at: string;
+}
+
+export interface InspectionQuestion {
+  id: string;
+  question_key: string;
+  body: string;
+  qtype: InspectionQuestionType;
+  principle: PrincipleKey | null;
+  layer: InspectionLayer;
+  weight_tier: "weighted" | "light";
+  rotation_group: number | null;
+  scenario_options: Json | null;
+  active: boolean;
+  created_at: string;
+}
+
+export interface Inspection {
+  id: string;
+  user_id: string;
+  cycle_number: number;
+  is_baseline: boolean;
+  status: InspectionStatus;
+  raw_answers: Json | null;
+  layer_reads: Json | null;
+  trajectory_read: Json | null;
+  generated_report: string | null;
+  flag_status: InspectionFlagStatus;
+  flag_reasons: string[];
+  reviewed_by: string | null;
+  cayden_note: string | null;
+  started_at: string | null;
+  sent_at: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface ReviewQueueItem {
+  id: string;
+  inspection_id: string;
+  flag_reasons: string[];
+  status: ReviewStatus;
+  resolved_by: string | null;
+  created_at: string;
+  resolved_at: string | null;
+}
+
 type RowOps<T extends { id: string; created_at: string }> = {
   Row: T;
   Insert: Omit<T, "id" | "created_at"> & Partial<Pick<T, "id" | "created_at">>;
@@ -111,6 +266,15 @@ export interface Database {
       situations: RowOps<Situation>;
       situation_notes: RowOps<SituationNote>;
       monthly_syntheses: RowOps<MonthlySynthesis>;
+      growth_plans: RowOps<GrowthPlan>;
+      principle_selections: RowOps<PrincipleSelection>;
+      principle_mappings: RowOps<PrincipleMapping>;
+      growth_goals: RowOps<GrowthGoal>;
+      cascade_checkins: RowOps<CascadeCheckin>;
+      cascade_checkin_goals: RowOps<CascadeCheckinGoal>;
+      inspection_questions: RowOps<InspectionQuestion>;
+      inspections: RowOps<Inspection>;
+      review_queue_items: RowOps<ReviewQueueItem>;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
