@@ -1,0 +1,25 @@
+# Local secrets for `wrangler dev` / `opennextjs-cloudflare preview`.
+# Copy to `.dev.vars` (gitignored) and fill in. These mirror .env.local but are
+# what the Workers runtime reads locally. In production, set them as Worker
+# secrets: `npx wrangler secret put <NAME>`.
+
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+ANTHROPIC_API_KEY=
+
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=Foreman <noreply@example.com>
+
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PRICE_MONTHLY=
+STRIPE_PRICE_YEARLY=
+
+CRON_SECRET=
+
+NEXT_PUBLIC_APP_URL=http://localhost:8787
+
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
