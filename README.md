@@ -11,7 +11,13 @@ Construction* framework: **foundation, framing, finishing.**
 - Anthropic Claude (`claude-sonnet-4-6`) for coaching and weekly synthesis
 - Resend for transactional email *(phase 5)*
 - Stripe Checkout for billing *(phase 6)*
-- Vercel hosting + Vercel Cron
+- Cloudflare Workers hosting (via OpenNext) + GitHub Actions cron
+
+## Deploying
+
+See **[docs/DEPLOY.md](docs/DEPLOY.md)** for the step-by-step production
+checklist, and **[docs/CLOUDFLARE.md](docs/CLOUDFLARE.md)** for the hosting
+details. Run `npm run preflight` first to confirm every required env var is set.
 
 ## Build phases
 
