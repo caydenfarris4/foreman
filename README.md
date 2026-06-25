@@ -27,7 +27,7 @@ The build follows the order in the original product brief:
 2. ✅ Daily check-in with Claude integration, auto-library
 3. ✅ Situation library + retrieval (FTS, pagination, edit/delete, notes, export)
 4. ✅ Weekly retrospective (history, monthly synthesis, skip, carry-over, retro-day email)
-5. ✅ Vercel Cron + Resend daily prompt emails
+5. ✅ GitHub Actions cron + Resend daily prompt emails
 6. ✅ Stripe billing + paywall after trial
 7. ✅ Marketing landing page polish
 
@@ -80,10 +80,10 @@ replaced with a rest message; the cron route (phase 5) skips them entirely.
 
 ## Daily prompt email cron
 
-`vercel.json` schedules `GET /api/cron/daily-prompts` every hour on the hour
-(`0 * * * *`). The handler:
+A GitHub Actions workflow (`.github/workflows/cron-daily-prompts.yml`) calls
+`GET /api/cron/daily-prompts` every hour. The handler:
 
-1. Authenticates against `Bearer ${CRON_SECRET}` (Vercel Cron sends this).
+1. Authenticates against `Bearer ${CRON_SECRET}` (the workflow sends this).
 2. Pulls every onboarded profile whose `subscription_status` is `trial` or
    `active` (service-role client — bypasses RLS).
 3. For each profile, computes the current hour in their timezone and skips

@@ -1,10 +1,8 @@
 name: Daily prompt cron
 
-# Hits /api/cron/daily-prompts on the production deployment every hour.
-# Replaces the Vercel cron entry while on the Hobby tier (Hobby only
-# permits daily schedules). When you upgrade to Vercel Pro, restore the
-# crons block in vercel.json and either delete this workflow or set
-# its 'on' trigger to workflow_dispatch only.
+# Hits /api/cron/daily-prompts on the production deployment (Cloudflare
+# Workers) every hour. This GitHub Actions workflow is the scheduler for
+# the app; it needs the repo variable APP_URL and the secret CRON_SECRET.
 
 on:
   schedule:
