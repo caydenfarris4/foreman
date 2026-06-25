@@ -96,6 +96,15 @@ export default async function DashboardPage({
   const weekday = weekdayInTimezone(profile.timezone);
   const onSabbath = profile.sabbath_day === weekday;
 
+  // Growth Inspection: prompt setup until the user has a current plan.
+  const { data: growthPlan } = await supabase
+    .from("growth_plans")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("is_current", true)
+    .maybeSingle();
+  const hasGrowthPlan = !!growthPlan;
+
   const { data: todayRow } = await supabase
     .from("daily_checkins")
     .select("*")
@@ -196,6 +205,26 @@ export default async function DashboardPage({
           {profile.name ? `Morning, ${profile.name}.` : "Welcome back."}
         </h1>
       </header>
+
+      {!hasGrowthPlan ? (
+        <Card className="mx-3 p-5">
+          <p className="type-cap text-oak-dim">GROWTH INSPECTION</p>
+          <h3 className="type-h2 mt-2 text-ink">Set your trajectory.</h3>
+          <p className="type-body mt-2 text-graphite">
+            Map your ten-year direction down to this week&apos;s work. We read
+            whether your daily work points where you said you want to go. Ten
+            minutes, once.
+          </p>
+          <div className="mt-4">
+            <Button asChild size="md">
+              <Link href="/inspection/start">
+                Start setup
+                <ArrowIcon />
+              </Link>
+            </Button>
+          </div>
+        </Card>
+      ) : null}
 
       {onSabbath ? (
         <Card className="mx-3 p-5">

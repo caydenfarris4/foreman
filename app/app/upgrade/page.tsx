@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { accessFor } from "@/lib/billing";
-import { PRICING } from "@/lib/stripe";
+import { PRICING, getPriceDisplay, yearlySavingsLabel } from "@/lib/stripe";
 import type { Profile } from "@/lib/database.types";
 import { UpgradeButtons } from "./upgrade-buttons";
 
@@ -32,6 +32,19 @@ export default async function UpgradePage({
 
   // If the user is already active, no need to be here — bounce them home.
   if (access.state === "active") redirect("/app");
+
+  // Pull the real prices from Stripe so what's shown matches what's charged.
+  // Fall back to the static constants only if Stripe can't be reached.
+  const [monthlyPrice, yearlyPrice] = await Promise.all([
+    getPriceDisplay("monthly"),
+    getPriceDisplay("yearly"),
+  ]);
+  const monthlyDisplay = monthlyPrice?.display ?? PRICING.monthly.display;
+  const monthlySuffix = monthlyPrice?.suffix ?? PRICING.monthly.suffix;
+  const yearlyDisplay = yearlyPrice?.display ?? PRICING.yearly.display;
+  const yearlySuffix = yearlyPrice?.suffix ?? PRICING.yearly.suffix;
+  const yearlySavings =
+    yearlySavingsLabel(monthlyPrice, yearlyPrice) ?? PRICING.yearly.savings;
 
   const eyebrow =
     access.state === "trialing"
@@ -79,16 +92,16 @@ export default async function UpgradePage({
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         <PlanCard
           eyebrow="MONTHLY"
-          price={PRICING.monthly.display}
-          suffix={PRICING.monthly.suffix}
+          price={monthlyDisplay}
+          suffix={monthlySuffix}
           body="Pay as you go. Cancel any time from your billing portal."
         />
         <PlanCard
           eyebrow="YEARLY"
-          price={PRICING.yearly.display}
-          suffix={PRICING.yearly.suffix}
+          price={yearlyDisplay}
+          suffix={yearlySuffix}
           body="Two months free. The price of finishing what you started."
-          savings={PRICING.yearly.savings}
+          savings={yearlySavings}
           highlighted
         />
       </div>

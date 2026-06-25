@@ -51,7 +51,7 @@ function dateInTz(timezone: string, now: Date): string {
 }
 
 export async function GET(request: NextRequest) {
-  // GitHub Actions (and Vercel Cron, if you switch back) sends
+  // The GitHub Actions cron workflow sends
   // `Authorization: Bearer ${CRON_SECRET}`. Fail closed: if CRON_SECRET
   // is unset in this environment, refuse to run rather than letting any
   // caller trigger emails to every user.

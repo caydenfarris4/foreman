@@ -2,9 +2,27 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Wordmark } from "@/components/ui/wordmark";
 import { PhaseTag } from "@/components/ui/phase-tag";
-import { PRICING } from "@/lib/stripe";
+import { PRICING, getPriceDisplay, yearlySavingsLabel } from "@/lib/stripe";
 
-export default function LandingPage() {
+// Render per request so the price shown is the live Stripe price (with a short
+// in-process cache in lib/stripe), not a value baked in at build time.
+export const dynamic = "force-dynamic";
+
+export default async function LandingPage() {
+  // Pull live Stripe prices so the public page can never show a price that
+  // differs from what checkout charges. Fall back to the static constants if
+  // Stripe is unreachable or the price IDs aren't configured yet.
+  const [monthlyPrice, yearlyPrice] = await Promise.all([
+    getPriceDisplay("monthly"),
+    getPriceDisplay("yearly"),
+  ]);
+  const monthlyDisplay = monthlyPrice?.display ?? PRICING.monthly.display;
+  const monthlySuffix = monthlyPrice?.suffix ?? PRICING.monthly.suffix;
+  const yearlyDisplay = yearlyPrice?.display ?? PRICING.yearly.display;
+  const yearlySuffix = yearlyPrice?.suffix ?? PRICING.yearly.suffix;
+  const yearlySavings =
+    yearlySavingsLabel(monthlyPrice, yearlyPrice) ?? PRICING.yearly.savings;
+
   return (
     <main className="min-h-screen bg-paper">
       <header className="border-b border-rule">
@@ -144,16 +162,16 @@ export default function LandingPage() {
         <div className="mx-auto mt-12 grid max-w-3xl gap-4 sm:grid-cols-2">
           <PlanCard
             eyebrow="MONTHLY"
-            price={PRICING.monthly.display}
-            suffix={PRICING.monthly.suffix}
+            price={monthlyDisplay}
+            suffix={monthlySuffix}
             body="Pay as you go. Cancel any time."
           />
           <PlanCard
             eyebrow="YEARLY"
-            price={PRICING.yearly.display}
-            suffix={PRICING.yearly.suffix}
+            price={yearlyDisplay}
+            suffix={yearlySuffix}
             body="Two months free. The price of finishing what you started."
-            savings={PRICING.yearly.savings}
+            savings={yearlySavings}
             highlighted
           />
         </div>

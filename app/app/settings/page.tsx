@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { accessFor } from "@/lib/billing";
-import { PRICING } from "@/lib/stripe";
+import { PRICING, getPriceDisplay } from "@/lib/stripe";
 import type { Profile } from "@/lib/database.types";
 
 export default async function SettingsPage() {
@@ -19,12 +19,16 @@ export default async function SettingsPage() {
   if (!profile) return null;
 
   const access = accessFor(profile);
-  const planLabel =
-    profile.stripe_price_id === process.env.STRIPE_PRICE_YEARLY
-      ? `Yearly · ${PRICING.yearly.display}${PRICING.yearly.suffix}`
-      : profile.stripe_price_id === process.env.STRIPE_PRICE_MONTHLY
-        ? `Monthly · ${PRICING.monthly.display}${PRICING.monthly.suffix}`
-        : "—";
+  // Show the plan label using the live Stripe price, falling back to the static
+  // constants only if Stripe can't be reached.
+  let planLabel = "—";
+  if (profile.stripe_price_id === process.env.STRIPE_PRICE_YEARLY) {
+    const p = await getPriceDisplay("yearly");
+    planLabel = `Yearly · ${p?.display ?? PRICING.yearly.display}${p?.suffix ?? PRICING.yearly.suffix}`;
+  } else if (profile.stripe_price_id === process.env.STRIPE_PRICE_MONTHLY) {
+    const p = await getPriceDisplay("monthly");
+    planLabel = `Monthly · ${p?.display ?? PRICING.monthly.display}${p?.suffix ?? PRICING.monthly.suffix}`;
+  }
 
   return (
     <div className="space-y-6 px-3 pb-8 pt-4">

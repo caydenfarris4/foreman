@@ -78,5 +78,7 @@ add cached/ISR routes later:
 
 - `nodejs_compat` is required: the cron routes use `node:crypto` and the
   Stripe / Anthropic / Supabase SDKs expect Node built-ins.
-- The Vercel config (`vercel.json`, currently empty) is left in place; this
-  migration is additive and does not break a Vercel deploy.
+- Cloudflare Workers is the only hosting target. The old `vercel.json` has been
+  removed; deploys go through `npm run deploy` (OpenNext + `wrangler deploy`) or
+  the GitHub-connected Workers Builds path above. The scheduled emails run on
+  GitHub Actions cron (`.github/workflows/cron-*.yml`), not Vercel Cron.
