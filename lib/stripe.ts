@@ -74,10 +74,12 @@ function formatPrice(price: Stripe.Price): PriceDisplay | null {
   };
 }
 
-// Tiny per-process cache. These pages are low-traffic and authed, but there is
-// no reason to hit Stripe on every render; prices change rarely.
+// Tiny per-process cache so a busy page doesn't hit Stripe on every single
+// render. Kept short (60s) so that when you change a price in Stripe it shows
+// up on the site within about a minute, not minutes later. Stripe stays the
+// single source of truth; this only smooths burst traffic.
 const priceCache = new Map<string, { value: PriceDisplay; at: number }>();
-const PRICE_TTL_MS = 5 * 60_000;
+const PRICE_TTL_MS = 60_000;
 
 /**
  * Fetch the live display price for a plan straight from Stripe, by the Price ID
