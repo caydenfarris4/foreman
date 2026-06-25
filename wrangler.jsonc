@@ -15,6 +15,10 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  // Attach the custom domain on deploy. `custom_domain: true` makes wrangler
+  // create the Custom Domain + DNS record + cert automatically (the zone must
+  // already be in this Cloudflare account, which it is). No dashboard needed.
+  "routes": [{ "pattern": "foreman.coach", "custom_domain": true }],
   "observability": {
     "enabled": true
   }
