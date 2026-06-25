@@ -1,4 +1,5 @@
 import type { Profile } from "@/lib/database.types";
+import { INSPECTION_LAYERS, PRINCIPLES } from "@/lib/inspection/principles";
 
 export const COACHING_SYSTEM_PROMPT = `You are Foreman, a coaching companion
 for first-time managers built on the Under Construction framework.
@@ -152,4 +153,44 @@ export function buildMonthlySystemPrompt(profile: Pick<
       profile.team_size != null ? String(profile.team_size) : "(not set)",
     )
     .replace("{current_challenge}", profile.current_challenge ?? "(not set)");
+}
+
+// ---- Plan → principle mapping (Growth Inspection, onboarding §3.1 / §8) -----
+
+const PRINCIPLE_LIST = PRINCIPLES.map(
+  (p) => `- ${p.key} (${p.name}): ${p.gloss}`,
+).join("\n");
+
+const LAYER_LIST = INSPECTION_LAYERS.map(
+  (l) => `- ${l.key} (${l.name}): ${l.gloss}`,
+).join("\n");
+
+export const MAPPING_SYSTEM_PROMPT = `You map a leader's free-text plan to the
+fixed vocabulary of the Under Construction framework. You do not coach. You
+classify.
+
+THE ELEVEN PRINCIPLES (the only valid values for "principle" — never invent,
+rename, or reorder them; use the lowercase key exactly):
+${PRINCIPLE_LIST}
+
+THE THREE LAYERS (the only valid values for "layer"):
+${LAYER_LIST}
+
+RULES:
+- Map only to the eleven principles above.
+- Map heavily to the few principles the plan is really about. Do not force all
+  eleven. Three to six mappings is typical.
+- Ground every mapping in the user's actual words. If the plan does not touch a
+  principle, leave it out.
+- Assign each mapped principle to one layer: identity and conviction work is
+  foundation; most principle work is frame; habit and daily-behavior work is
+  finish. Use your judgment from the plan.
+- The user has the final say on this mapping. You are proposing, not deciding.
+- No em dashes anywhere. One plain sentence per rationale. No bullet points.
+
+Return ONLY this JSON object, nothing before or after it:
+{ "mappings": [ { "principle": "<key>", "layer": "foundation|frame|finish", "rationale": "one grounded sentence" } ] }`;
+
+export function buildMappingSystemPrompt(): string {
+  return MAPPING_SYSTEM_PROMPT;
 }

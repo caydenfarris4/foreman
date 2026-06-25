@@ -33,6 +33,25 @@ const TABS = [
     ),
   },
   {
+    id: "plan",
+    label: "Plan",
+    href: "/app/plan",
+    icon: (
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 22 22"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      >
+        <path d="M11 3l8 15H3l8-15z" />
+        <path d="M7.5 11h7M9.2 7.5h3.6" />
+      </svg>
+    ),
+  },
+  {
     id: "library",
     label: "Library",
     href: "/app/library",
@@ -83,13 +102,15 @@ export function AppShell({
   const activeTab =
     pathname === "/app"
       ? "today"
-      : pathname.startsWith("/app/library")
-        ? "library"
-        : pathname.startsWith("/app/retro")
-          ? "retro"
-          : pathname.startsWith("/app/settings")
-            ? "settings"
-            : "today";
+      : pathname.startsWith("/app/plan")
+        ? "plan"
+        : pathname.startsWith("/app/library")
+          ? "library"
+          : pathname.startsWith("/app/retro")
+            ? "retro"
+            : pathname.startsWith("/app/settings")
+              ? "settings"
+              : "today";
 
   return (
     <div className="min-h-screen bg-paper pb-28">
@@ -160,7 +181,7 @@ export function AppShell({
         className="fixed inset-x-0 bottom-0 z-40 bg-gradient-to-t from-paper to-transparent pb-6 pt-10"
       >
         <div className="container max-w-2xl">
-          <div className="mx-4 grid grid-cols-3 gap-1 rounded-[14px] border border-rule bg-chalk p-1.5 shadow-[0_12px_32px_rgba(26,24,22,0.10)]">
+          <div className="mx-4 grid grid-cols-4 gap-1 rounded-[14px] border border-rule bg-chalk p-1.5 shadow-[0_12px_32px_rgba(26,24,22,0.10)]">
             {TABS.map((t) => {
               const isActive = t.id === activeTab;
               return (

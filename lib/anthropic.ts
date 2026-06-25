@@ -1,4 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
+import {
+  isInspectionLayer,
+  isPrincipleKey,
+} from "@/lib/inspection/principles";
+import type { InspectionLayer, PrincipleKey } from "@/lib/database.types";
 
 export const CLAUDE_MODEL = "claude-sonnet-4-6";
 export const CLAUDE_TIMEOUT_MS = 30_000;
@@ -110,4 +115,52 @@ export function parseMonthlyJson(raw: string): MonthlyJson | null {
     // fall through
   }
   return null;
+}
+
+export interface MappingItem {
+  principle: PrincipleKey;
+  layer: InspectionLayer;
+  rationale: string;
+}
+
+// Parse the plan→principle mapping JSON. Drops any item that names a principle
+// or layer outside the fixed vocabulary, so the model can't invent principles.
+export function parseMappingJson(raw: string): MappingItem[] | null {
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const candidate = (fenced ? fenced[1] : raw).trim();
+  const start = candidate.indexOf("{");
+  const end = candidate.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+  try {
+    const parsed = JSON.parse(candidate.slice(start, end + 1));
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      !Array.isArray(parsed.mappings)
+    ) {
+      return null;
+    }
+    const items: MappingItem[] = [];
+    const seen = new Set<string>();
+    for (const m of parsed.mappings) {
+      if (
+        m &&
+        typeof m === "object" &&
+        isPrincipleKey(m.principle) &&
+        isInspectionLayer(m.layer) &&
+        !seen.has(m.principle)
+      ) {
+        seen.add(m.principle);
+        items.push({
+          principle: m.principle,
+          layer: m.layer,
+          rationale:
+            typeof m.rationale === "string" ? m.rationale.trim() : "",
+        });
+      }
+    }
+    return items;
+  } catch {
+    return null;
+  }
 }
