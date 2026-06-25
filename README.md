@@ -66,11 +66,16 @@ supabase/migrations/0001_init.sql
 docs/under-construction.txt       source book — coaching reference
 ```
 
-## Sabbath pause
+## Sabbath reflection
 
-The check-in route and dashboard both check the user's `sabbath_day` against
-the current weekday in their `timezone`. On the sabbath, the prompt UI is
-replaced with a rest message; the cron route (phase 5) skips them entirely.
+The sabbath is not a pause. On the user's `sabbath_day` (checked against the
+current weekday in their `timezone`), the coaching check-in is replaced with a
+**reflection day** focused on faith, reflection, personal growth, and
+meditation. The dashboard and the check-in route render a reflection prompt
+(`lib/prompts/reflection.ts`) instead of the managerial prompt, and the cron
+route sends a reflection email (`lib/emails/reflection-prompt.ts`) instead of
+skipping. Reflections are contemplative: nothing is submitted, so they stay out
+of streaks, the library, and the weekly retro.
 
 ## Daily prompt email cron
 
@@ -82,7 +87,8 @@ replaced with a rest message; the cron route (phase 5) skips them entirely.
    `active` (service-role client — bypasses RLS).
 3. For each profile, computes the current hour in their timezone and skips
    anyone whose `notification_time` hour doesn't match.
-4. Skips anyone whose weekday-in-timezone matches their `sabbath_day`.
+4. On the user's `sabbath_day`, sends a **reflection** email instead of the
+   coaching prompt (no `daily_checkins` row is written for it).
 5. Skips anyone who has already completed today's check-in.
 6. Otherwise, *locks in today's prompt by inserting the `daily_checkins`
    row*, then sends the email via Resend. The row creation is the

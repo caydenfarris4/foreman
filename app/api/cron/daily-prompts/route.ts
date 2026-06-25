@@ -7,7 +7,13 @@ import {
   dailyPromptSubject,
   dailyPromptText,
 } from "@/lib/emails/daily-prompt";
+import {
+  reflectionPromptHtml,
+  reflectionPromptSubject,
+  reflectionPromptText,
+} from "@/lib/emails/reflection-prompt";
 import { promptForDay } from "@/lib/prompts/daily";
+import { reflectionForDay } from "@/lib/prompts/reflection";
 import type { FrameworkPhase, Profile } from "@/lib/database.types";
 
 export const runtime = "nodejs";
@@ -107,7 +113,7 @@ export async function GET(request: NextRequest) {
 
   let attempted = 0;
   let sent = 0;
-  let skippedSabbath = 0;
+  let reflectionsSent = 0;
   let skippedHour = 0;
   let skippedAlreadyChecked = 0;
   const errors: { id: string; reason: string }[] = [];
@@ -117,12 +123,51 @@ export async function GET(request: NextRequest) {
       skippedHour++;
       continue;
     }
-    const todayWeekday = weekdayInTz(p.timezone, now);
-    if (p.sabbath_day === todayWeekday) {
-      skippedSabbath++;
+    const today = dateInTz(p.timezone, now);
+
+    // Sabbath is no longer a pause. Send a reflection prompt instead of the
+    // coaching prompt. We don't write to daily_checkins for it — the sabbath
+    // reflection is contemplative, not a managerial check-in — so it stays out
+    // of streaks, the library, and the weekly retro. Idempotency relies on the
+    // hourly cadence, the same as the coaching path does in practice.
+    if (p.sabbath_day === weekdayInTz(p.timezone, now)) {
+      const reflectionPrompt = reflectionForDay(today, p.id);
+      try {
+        const resend = getResend();
+        const result = await resend.emails.send({
+          from: getFromAddress(),
+          to: p.email,
+          subject: reflectionPromptSubject(),
+          text: reflectionPromptText({
+            name: p.name,
+            promptText: reflectionPrompt,
+            appUrl,
+          }),
+          html: reflectionPromptHtml({
+            name: p.name,
+            promptText: reflectionPrompt,
+            appUrl,
+          }),
+        });
+        if (result.error) {
+          console.error("Cron: Resend reflection error", p.id, result.error);
+          errors.push({
+            id: p.id,
+            reason: result.error.message ?? "send failed",
+          });
+          continue;
+        }
+        reflectionsSent++;
+      } catch (err) {
+        console.error("Cron: reflection send threw", p.id, err);
+        errors.push({
+          id: p.id,
+          reason: err instanceof Error ? err.message : "unknown error",
+        });
+      }
       continue;
     }
-    const today = dateInTz(p.timezone, now);
+
     attempted++;
 
     // If a check-in row already exists for today AND it has a response,
@@ -203,8 +248,8 @@ export async function GET(request: NextRequest) {
     scanned: profiles.length,
     attempted,
     sent,
+    reflectionsSent,
     skippedHour,
-    skippedSabbath,
     skippedAlreadyChecked,
     errorCount: errors.length,
     errors: errors.slice(0, 25),

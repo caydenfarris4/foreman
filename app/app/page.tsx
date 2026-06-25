@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { PhaseTag } from "@/components/ui/phase-tag";
 import { createClient } from "@/lib/supabase/server";
 import { promptForDay } from "@/lib/prompts/daily";
+import { reflectionForDay } from "@/lib/prompts/reflection";
 import {
   todayInTimezone,
   weekdayInTimezone,
@@ -200,15 +201,24 @@ export default async function DashboardPage({
       {onSabbath ? (
         <Card className="mx-3 p-5">
           <p className="type-cap text-oak-dim">
-            REST DAY · {profile.sabbath_day.toUpperCase()}
+            SABBATH · {profile.sabbath_day.toUpperCase()}
           </p>
-          <h2 className="type-h2 mt-2 text-ink">
-            Foreman is paused today.
-          </h2>
+          <h2 className="type-h2 mt-2 text-ink">A day set apart.</h2>
           <p className="type-body mt-2 text-graphite">
-            You chose {profile.sabbath_day} as your rest day. Take it. The
-            site will be here tomorrow.
+            Not a pause. A day for reflection, faith, and growth. A chance to
+            step back into something bigger than the work.
           </p>
+          <p className="type-prompt mt-4 text-ink">
+            {reflectionForDay(today, user.id)}
+          </p>
+          <div className="mt-4">
+            <Button asChild size="md">
+              <Link href="/app/checkin">
+                Open reflection
+                <ArrowIcon />
+              </Link>
+            </Button>
+          </div>
         </Card>
       ) : (
         <div className="mx-3 overflow-hidden rounded-lg bg-ink p-5 text-chalk">

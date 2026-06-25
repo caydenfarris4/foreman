@@ -105,7 +105,7 @@ export default async function UpgradePage({
             "Real coaching back, under 250 words, in the foreman's voice",
             "A searchable library of every situation you've worked through",
             "A weekly site report that names the pattern across the week",
-            "A sabbath day that pauses the whole thing. No streaks, no shame.",
+            "A sabbath set apart for reflection and faith, not a pause. No streaks, no shame.",
           ].map((line) => (
             <li key={line} className="flex items-start gap-2.5">
               <CheckIcon />

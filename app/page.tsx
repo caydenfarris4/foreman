@@ -62,7 +62,7 @@ export default function LandingPage() {
               </Button>
             </div>
             <p className="type-caption mt-4 text-graphite">
-              No credit card. Pauses on your sabbath day. Cancel anytime.
+              No credit card. Cancel anytime. A sabbath set apart for reflection.
             </p>
           </div>
           <CheckInPreview />
@@ -213,7 +213,7 @@ export default function LandingPage() {
 const STEPS = [
   {
     title: "Frame your blueprint",
-    body: "Two-minute onboarding. Tell us your phase, your role, and the day you take off. Your sabbath pauses the whole thing.",
+    body: "Two-minute onboarding. Tell us your phase, your role, and the day you set apart. Your sabbath becomes a day for reflection, faith, and growth.",
   },
   {
     title: "Answer one prompt",
@@ -234,7 +234,7 @@ const INCLUDED = [
   "Real coaching back, under 250 words, in the foreman's voice",
   "A searchable library of every situation you've worked through",
   "A weekly site report that names the pattern across the week",
-  "A sabbath day that pauses the whole thing — no streaks, no shame",
+  "A sabbath set apart for reflection and faith, not a pause. No streaks, no shame",
   "Email delivery and a quiet web app. No notifications.",
 ];
 

@@ -113,7 +113,7 @@ function SignupForm({
       <p className="type-cap text-oak-dim">START YOUR BUILD</p>
       <h1 className="type-h1 mt-2 text-ink">Start your 14-day trial.</h1>
       <p className="type-body mt-3 text-graphite">
-        No credit card. Cancel anytime. Pauses on your sabbath day.
+        No credit card. Cancel anytime. A sabbath set apart for reflection.
       </p>
 
       <form action={signup} className="mt-8 space-y-4">

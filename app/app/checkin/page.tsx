@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { promptForDay } from "@/lib/prompts/daily";
+import { reflectionForDay } from "@/lib/prompts/reflection";
 import { todayInTimezone, weekdayInTimezone } from "@/lib/utils";
 import type { DailyCheckin, Profile } from "@/lib/database.types";
 import { CheckinForm } from "./checkin-form";
+import { SabbathReflection } from "./sabbath-reflection";
 
 export default async function CheckinPage() {
   const supabase = await createClient();
@@ -23,7 +25,15 @@ export default async function CheckinPage() {
   const today = todayInTimezone(profile.timezone);
   const weekday = weekdayInTimezone(profile.timezone);
   if (profile.sabbath_day === weekday) {
-    redirect("/app");
+    // Sabbath is a reflection day, not a pause. Show the reflection instead of
+    // the coaching check-in.
+    return (
+      <SabbathReflection
+        dayLabel={profile.sabbath_day}
+        prompt={reflectionForDay(today, user.id)}
+        name={profile.name}
+      />
+    );
   }
 
   const { data: existingRow } = await supabase
