@@ -48,7 +48,7 @@ export default async function InspectionPage() {
   const { data: latestRows } = await admin
     .from("inspections")
     .select(
-      "id, cycle_number, is_baseline, status, flag_status, generated_report, sent_at, trajectory_read",
+      "id, cycle_number, is_baseline, status, flag_status, generated_report, cayden_note, sent_at, trajectory_read",
     )
     .eq("user_id", user.id)
     .order("cycle_number", { ascending: false })
@@ -61,6 +61,7 @@ export default async function InspectionPage() {
         | "status"
         | "flag_status"
         | "generated_report"
+        | "cayden_note"
         | "sent_at"
         | "trajectory_read"
       >
@@ -130,6 +131,15 @@ export default async function InspectionPage() {
                 {p}
               </p>
             ))}
+            {latest.cayden_note ? (
+              <div className="mt-2 border-t border-rule pt-4">
+                {latest.cayden_note.split(/\n\s*\n/).map((p, i) => (
+                  <p key={i} className="type-body-lg leading-[1.6] text-ink">
+                    {p}
+                  </p>
+                ))}
+              </div>
+            ) : null}
           </div>
         </article>
         <details>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { accessFor } from "@/lib/billing";
@@ -35,6 +36,19 @@ export default async function SettingsPage() {
           Editable fields are coming next. For now, what&apos;s on file.
         </p>
       </div>
+
+      {profile.is_admin ? (
+        <Link
+          href="/app/admin/review"
+          className="flex items-center justify-between rounded-lg border border-oak bg-oak-wash p-4 text-ink transition-colors hover:bg-oak/20"
+        >
+          <span>
+            <span className="type-cap text-oak-dim">ADMIN</span>
+            <span className="type-label mt-1 block">Inspection review queue</span>
+          </span>
+          <span className="type-label text-oak-dim">Open →</span>
+        </Link>
+      ) : null}
 
       {/* Billing */}
       <div className="rounded-lg border border-rule bg-chalk p-5">
