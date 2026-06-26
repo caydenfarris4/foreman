@@ -23,12 +23,24 @@ Build order (BUILD_SPEC §8):
 2. **Plan capture + AI plan→principle mapping with user confirmation** — done
    (lives in a dedicated `/app/plan` section rather than folded into the
    existing onboarding wizard; see OVERLAPS.md Overlap 5).
-3. Daily / weekly / monthly check-ins — not started.
+3. **Daily / weekly / monthly cascade check-ins** — done (`/app/plan/checkin`).
+   Goal-completion tracking that becomes the behavioral history the six-month
+   inspection reads. Separate from the existing AI coaching check-in.
 4. Inspection instrument (question bank + delivery) — not started.
 5. Scoring engine (trajectory math) — not started.
 6. Report generation — not started.
 7. Governance router + Cayden's review queue — not started.
 8. Wiring into chatbot / daily motivations / coaching prompts — not started.
+
+### Stage 3 shipped
+
+- `/app/plan/checkin` — daily/weekly/monthly cascade check-ins: mark the
+  period's goals complete + an optional reflection, reviewed against the level
+  above (daily→weekly, weekly→monthly, monthly→six-month).
+- `app/app/plan/actions.ts` `saveCascadeCheckin` — upserts `cascade_checkins`
+  and replaces `cascade_checkin_goals`; filters completions to user-owned goals
+  (defense in depth on top of RLS); never mutates a goal's own status.
+- `lib/inspection/periods.ts` — pure period/level math, unit-tested.
 
 ### Stage 2 shipped
 

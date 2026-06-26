@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { principleByKey } from "@/lib/inspection/principles";
@@ -77,6 +78,19 @@ export default async function PlanPage() {
         <p className="type-cap text-oak-dim">YOUR BLUEPRINT</p>
         <h1 className="type-h1 mt-2 text-ink">The plan, and the build.</h1>
       </header>
+
+      <Link
+        href="/app/plan/checkin"
+        className="flex items-center justify-between rounded-lg bg-ink p-4 text-chalk transition-colors hover:bg-[#2A2620]"
+      >
+        <span>
+          <span className="type-cap text-chalk/55">CASCADE CHECK-IN</span>
+          <span className="type-label mt-1 block">
+            Work today&apos;s goals
+          </span>
+        </span>
+        <span className="type-label">Open →</span>
+      </Link>
 
       {/* Blueprint summary + edit */}
       <section className="overflow-hidden rounded-lg border border-rule bg-chalk">

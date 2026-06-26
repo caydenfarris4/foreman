@@ -258,3 +258,90 @@ export async function saveMapping(input: unknown): Promise<Result> {
   revalidatePath("/app/plan");
   return { ok: true };
 }
+
+// ---- Cascade check-ins (BUILD_SPEC §3.4) -----------------------------------
+
+const CheckinSchema = z.object({
+  checkin_type: z.enum(["daily", "weekly", "monthly"]),
+  period_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  reflection: z.string().trim().max(2000).optional(),
+  completions: z
+    .array(
+      z.object({
+        goal_id: z.string().uuid(),
+        completed: z.boolean(),
+      }),
+    )
+    .max(200),
+});
+
+// Record (or update) a daily/weekly/monthly cascade check-in: which goals were
+// completed for the period plus an optional reflection. This completion history
+// is the behavioral anchor the six-month inspection reads. We never mutate a
+// goal's own status here — the check-in is a point-in-time record, separate
+// from the goal's lifecycle.
+export async function saveCascadeCheckin(input: unknown): Promise<Result> {
+  const parsed = CheckinSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Bad request." };
+  const { supabase, userId } = await currentUserId();
+  if (!userId) return { ok: false, error: "Not signed in." };
+
+  const { checkin_type, period_date, reflection } = parsed.data;
+
+  // Only accept completions for goals this user actually owns (defense in
+  // depth on top of RLS — never link a foreign goal id into a check-in).
+  const { data: ownGoals } = await supabase
+    .from("growth_goals")
+    .select("id")
+    .eq("user_id", userId);
+  const ownIds = new Set(
+    ((ownGoals ?? []) as { id: string }[]).map((g) => g.id),
+  );
+  const completions = parsed.data.completions.filter((c) =>
+    ownIds.has(c.goal_id),
+  );
+
+  // Upsert the check-in row for this (user, type, period).
+  const { data: checkinRow, error: upsertError } = await supabase
+    .from("cascade_checkins")
+    .upsert(
+      {
+        user_id: userId,
+        checkin_type,
+        period_date,
+        reflection: reflection && reflection.length ? reflection : null,
+      },
+      { onConflict: "user_id,checkin_type,period_date" },
+    )
+    .select("id")
+    .single();
+  if (upsertError || !checkinRow) {
+    return { ok: false, error: "Could not save your check-in." };
+  }
+  const checkinId = (checkinRow as { id: string }).id;
+
+  // Replace the per-goal completion rows for this check-in.
+  await supabase
+    .from("cascade_checkin_goals")
+    .delete()
+    .eq("checkin_id", checkinId);
+  if (completions.length) {
+    const { error: insertError } = await supabase
+      .from("cascade_checkin_goals")
+      .insert(
+        completions.map((c) => ({
+          user_id: userId,
+          checkin_id: checkinId,
+          goal_id: c.goal_id,
+          completed: c.completed,
+        })),
+      );
+    if (insertError) {
+      return { ok: false, error: "Saved the note, but goals failed to save." };
+    }
+  }
+
+  revalidatePath("/app/plan/checkin");
+  revalidatePath("/app/plan");
+  return { ok: true };
+}
