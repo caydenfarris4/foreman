@@ -17,3 +17,7 @@ tsconfig.tsbuildinfo
 .wrangler
 .dev.vars
 cloudflare-env.d.ts
+
+# Test artifacts
+test-results
+playwright-report
