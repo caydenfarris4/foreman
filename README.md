@@ -35,6 +35,30 @@ npm install
 npm run dev
 ```
 
+## Testing
+
+```bash
+npm test            # unit tests (Vitest) — pure logic, security-critical
+npm run test:coverage
+npm run test:e2e    # Playwright core flows (login, auth gate, headers)
+```
+
+Unit tests cover input validation/sanitizers, the paywall gates, governance
+validators, the fixed principle vocabulary, the AI JSON parsers, and the login
+helpers. E2E covers the login screen, the unauthenticated redirect gate, public
+pages, and security headers. Both run in CI (`.github/workflows/ci.yml`) on
+every push/PR to `main`.
+
+E2E runs against a built local server by default (needs `NEXT_PUBLIC_SUPABASE_*`
+in the environment), or against a deployment:
+`PLAYWRIGHT_BASE_URL=https://foreman.coach npm run test:e2e`.
+
+## Security
+
+See [`SECURITY.md`](./SECURITY.md) for the control inventory and threat model
+(data isolation via RLS, the login-screen hardening, injection defenses,
+webhook verification, rate limiting, and the SOC 2 roadmap).
+
 ## Environment variables
 
 See `.env.example`. The minimum to run phases 1-2:

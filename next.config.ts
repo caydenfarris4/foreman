@@ -20,6 +20,13 @@ const SECURITY_HEADERS = [
     value:
       "camera=(), microphone=(), geolocation=(), payment=(), usb=(), midi=(), magnetometer=(), gyroscope=(), accelerometer=()",
   },
+  // Force HTTPS for two years incl. subdomains. The app is served over TLS
+  // (Cloudflare); browsers ignore this header over plain HTTP, so it is safe
+  // to emit everywhere. SOC 2 transport-security control.
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=63072000; includeSubDomains; preload",
+  },
 ];
 
 const nextConfig: NextConfig = {

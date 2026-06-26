@@ -5,17 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Wordmark } from "@/components/ui/wordmark";
 import { createClient } from "@/lib/supabase/server";
 import { EMAIL_MAX_LEN, PASSWORD_MAX_LEN } from "@/lib/validation";
+import {
+  credentialsWellFormed,
+  isEmailNotConfirmedError,
+  safeEmailHint,
+} from "@/lib/auth/login";
 
 async function login(formData: FormData) {
   "use server";
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  if (
-    !email ||
-    email.length > EMAIL_MAX_LEN ||
-    !password ||
-    password.length > PASSWORD_MAX_LEN
-  ) {
+  if (!credentialsWellFormed(email, password)) {
     redirect("/login?error=Email%20and%20password%20required");
   }
   const supabase = await createClient();
@@ -26,12 +26,8 @@ async function login(formData: FormData) {
     // response — otherwise the user gets a misleading "wrong password"
     // when the real issue is they need to click the email link.
     // Everything else stays generic to avoid account enumeration.
-    const msg = (error.message ?? "").toLowerCase();
-    const code = (error as { code?: string }).code ?? "";
-    if (code === "email_not_confirmed" || msg.includes("not confirmed")) {
-      redirect(
-        `/login?notice=confirm&email=${encodeURIComponent(email)}`,
-      );
+    if (isEmailNotConfirmedError(error)) {
+      redirect(`/login?notice=confirm&email=${encodeURIComponent(email)}`);
     }
     redirect("/login?error=Invalid%20email%20or%20password");
   }
@@ -65,10 +61,7 @@ export default async function LoginPage({
 }) {
   const params = await searchParams;
   const showConfirmNotice = params.notice === "confirm";
-  const emailHint =
-    typeof params.email === "string" && params.email.includes("@")
-      ? params.email.slice(0, EMAIL_MAX_LEN)
-      : null;
+  const emailHint = safeEmailHint(params.email);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-paper px-6 py-12">
