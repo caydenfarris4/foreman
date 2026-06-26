@@ -37,6 +37,12 @@ describe("getSupabaseUrl (paste-robustness)", () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", `${GOOD}/`);
     expect(getSupabaseUrl()).toBe(GOOD);
   });
+  it("strips a stray path like /rest/v1 (reduces to origin)", () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", `${GOOD}/rest/v1`);
+    expect(getSupabaseUrl()).toBe(GOOD);
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", `${GOOD}/auth/v1/`);
+    expect(getSupabaseUrl()).toBe(GOOD);
+  });
   it("returns empty string when unset", () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
     expect(getSupabaseUrl()).toBe("");

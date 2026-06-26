@@ -24,7 +24,14 @@ export function getSupabaseUrl(): string {
   let url = clean(process.env.NEXT_PUBLIC_SUPABASE_URL);
   if (!url) return "";
   if (!/^https?:\/\//i.test(url)) url = `https://${url}`; // ensure scheme
-  return url.replace(/\/+$/, ""); // drop trailing slash(es)
+  try {
+    // Reduce to scheme + host. Drops any path the project URL was pasted with
+    // (e.g. a trailing /rest/v1), a trailing slash, or a query string — the
+    // Supabase client appends its own /auth/v1, /rest/v1, etc.
+    return new URL(url).origin;
+  } catch {
+    return url.replace(/\/+$/, "");
+  }
 }
 
 export function getSupabaseAnonKey(): string {
