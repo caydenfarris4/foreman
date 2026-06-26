@@ -164,3 +164,38 @@ export function parseMappingJson(raw: string): MappingItem[] | null {
     return null;
   }
 }
+
+export interface InspectionReportJson {
+  report: string;
+  hard_note: string | null;
+}
+
+// Parse the inspection report JSON: { report, hard_note }. Returns null if the
+// report text is missing so the caller can regenerate.
+export function parseInspectionReportJson(
+  raw: string,
+): InspectionReportJson | null {
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const candidate = (fenced ? fenced[1] : raw).trim();
+  const start = candidate.indexOf("{");
+  const end = candidate.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+  try {
+    const parsed = JSON.parse(candidate.slice(start, end + 1));
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      typeof parsed.report === "string" &&
+      parsed.report.trim().length > 0
+    ) {
+      const hard =
+        typeof parsed.hard_note === "string" && parsed.hard_note.trim().length
+          ? parsed.hard_note.trim()
+          : null;
+      return { report: parsed.report.trim(), hard_note: hard };
+    }
+  } catch {
+    // fall through
+  }
+  return null;
+}

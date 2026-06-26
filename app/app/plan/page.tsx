@@ -79,18 +79,30 @@ export default async function PlanPage() {
         <h1 className="type-h1 mt-2 text-ink">The plan, and the build.</h1>
       </header>
 
-      <Link
-        href="/app/plan/checkin"
-        className="flex items-center justify-between rounded-lg bg-ink p-4 text-chalk transition-colors hover:bg-[#2A2620]"
-      >
-        <span>
-          <span className="type-cap text-chalk/55">CASCADE CHECK-IN</span>
-          <span className="type-label mt-1 block">
-            Work today&apos;s goals
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <Link
+          href="/app/plan/checkin"
+          className="flex items-center justify-between rounded-lg bg-ink p-4 text-chalk transition-colors hover:bg-[#2A2620]"
+        >
+          <span>
+            <span className="type-cap text-chalk/55">CASCADE CHECK-IN</span>
+            <span className="type-label mt-1 block">
+              Work today&apos;s goals
+            </span>
           </span>
-        </span>
-        <span className="type-label">Open →</span>
-      </Link>
+          <span className="type-label">Open →</span>
+        </Link>
+        <Link
+          href="/app/inspection"
+          className="flex items-center justify-between rounded-lg border border-oak bg-oak-wash p-4 text-ink transition-colors hover:bg-oak/20"
+        >
+          <span>
+            <span className="type-cap text-oak-dim">GROWTH INSPECTION</span>
+            <span className="type-label mt-1 block">Walk the site</span>
+          </span>
+          <span className="type-label text-oak-dim">Open →</span>
+        </Link>
+      </div>
 
       {/* Blueprint summary + edit */}
       <section className="overflow-hidden rounded-lg border border-rule bg-chalk">
