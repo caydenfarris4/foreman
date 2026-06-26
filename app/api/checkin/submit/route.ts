@@ -8,8 +8,10 @@ import {
   parseCoachingJson,
 } from "@/lib/anthropic";
 import { buildSystemPrompt } from "@/lib/prompts";
+import { inspectionContextLine } from "@/lib/inspection/context";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { accessFor, canUseAi } from "@/lib/billing";
+import type { TrajectoryRead } from "@/lib/inspection/scoring";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -83,7 +85,23 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const systemPrompt = buildSystemPrompt(profile);
+  // Ground coaching in the user's latest inspection (RLS only exposes sent
+  // inspections, which is exactly what we want here).
+  const { data: lastInspection } = await supabase
+    .from("inspections")
+    .select("trajectory_read")
+    .eq("user_id", user.id)
+    .not("sent_at", "is", null)
+    .order("cycle_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const contextLine = inspectionContextLine(
+    (lastInspection as { trajectory_read: TrajectoryRead | null } | null)
+      ?.trajectory_read ?? null,
+  );
+  const systemPrompt = contextLine
+    ? `${buildSystemPrompt(profile)}\n\n${contextLine}`
+    : buildSystemPrompt(profile);
 
   let coachingText: string | null = null;
   let phase: "foundation" | "framing" | "finishing" = profile.current_phase;

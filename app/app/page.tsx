@@ -6,6 +6,9 @@ import { PhaseTag } from "@/components/ui/phase-tag";
 import { createClient } from "@/lib/supabase/server";
 import { promptForDay } from "@/lib/prompts/daily";
 import { reflectionForDay } from "@/lib/prompts/reflection";
+import { stuckAcrossTwo } from "@/lib/inspection/context";
+import { principleByKey } from "@/lib/inspection/principles";
+import type { TrajectoryRead } from "@/lib/inspection/scoring";
 import {
   todayInTimezone,
   weekdayInTimezone,
@@ -160,6 +163,23 @@ export default async function DashboardPage({
   const isRetroDay = weekday === profile.retro_day && !onSabbath;
   const daysToRetro = daysUntilWeekday(profile.retro_day, profile.timezone);
 
+  // Inspection nudge: a principle stuck across the last two inspections is the
+  // "needs a human" signal.
+  const { data: recentInspections } = await supabase
+    .from("inspections")
+    .select("trajectory_read, cycle_number")
+    .eq("user_id", user.id)
+    .not("sent_at", "is", null)
+    .order("cycle_number", { ascending: false })
+    .limit(2);
+  const insp = (recentInspections ?? []) as {
+    trajectory_read: TrajectoryRead | null;
+  }[];
+  const stuckPrinciples = stuckAcrossTwo(
+    insp[0]?.trajectory_read ?? null,
+    insp[1]?.trajectory_read ?? null,
+  ).map((p) => principleByKey(p).name);
+
   const { logged, daysInMonth, dayOfMonth } = siteDaysThisMonth(
     monthCheckins,
     today,
@@ -261,6 +281,20 @@ export default async function DashboardPage({
               </Link>
             </Button>
           </div>
+        </Card>
+      ) : null}
+
+      {stuckPrinciples.length ? (
+        <Card className="mx-3 p-5">
+          <p className="type-cap text-oak-dim">STILL STANDING IN THE SAME SPOT</p>
+          <h3 className="type-h2 mt-2 text-ink">
+            {stuckPrinciples.join(" and ")} hasn&apos;t moved in two inspections.
+          </h3>
+          <p className="type-body mt-2 text-graphite">
+            A whole cycle in the same place is exactly when a real conversation
+            helps more than another prompt. It may be time to sit down with
+            someone on this one.
+          </p>
         </Card>
       ) : null}
 

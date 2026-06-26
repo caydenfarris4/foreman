@@ -26,11 +26,21 @@ Build order (BUILD_SPEC §8):
 3. **Daily / weekly / monthly cascade check-ins** — done (`/app/plan/checkin`).
    Goal-completion tracking that becomes the behavioral history the six-month
    inspection reads. Separate from the existing AI coaching check-in.
-4. Inspection instrument (question bank + delivery) — not started.
-5. Scoring engine (trajectory math) — not started.
-6. Report generation — not started.
-7. Governance router + Cayden's review queue — not started.
-8. Wiring into chatbot / daily motivations / coaching prompts — not started.
+4. **Inspection instrument** — done (`lib/inspection/questions.ts`,
+   `/app/inspection`).
+5. **Scoring engine** — done (`lib/inspection/scoring.ts`): trajectory math,
+   three-layer reads, behavioral anchor, never a state score.
+6. **Report generation** — done (`/api/inspection/submit`): governed report,
+   regenerates if it breaks a programmatic rule.
+7. **Governance router + review queue** — done (`lib/inspection/router.ts`,
+   `/app/admin/review`).
+8. **Wiring** — done (`lib/inspection/context.ts`): latest inspection feeds the
+   daily coaching prompt; a stuck-across-two-cycles principle surfaces a
+   "needs a human" nudge on the dashboard.
+
+The Growth Inspection is now functional end to end: plan → cascade → check-ins
+→ inspection instrument → scoring → governed report → auto-clear or review →
+the report feeding back into coaching. UI/UX polish is a separate pass.
 
 ### Stage 3 shipped
 
