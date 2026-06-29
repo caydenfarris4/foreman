@@ -11,7 +11,7 @@ import { chromium } from "@playwright/test";
 
 const PORT = process.env.PORT || "3210";
 const BASE = `http://localhost:${PORT}`;
-const URL = `${BASE}/preview/house?house3d=on`;
+const URL = `${BASE}/preview/house?house3d=on&tier=${process.env.TIER || "high"}`;
 const OUT_DIR = process.env.OUT_DIR || "/tmp/house-walkthrough";
 const CHROMIUM = process.env.PLAYWRIGHT_CHROMIUM_PATH || "/opt/pw-browsers/chromium";
 

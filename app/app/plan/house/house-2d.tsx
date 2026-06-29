@@ -116,18 +116,42 @@ export function House2D({
 
       {/* Walls rise from the foundation. */}
       <motion.rect x="70" width="180" fill={PAPER2} stroke={INK} strokeWidth="2" y={wallY} height={wallH} style={{ opacity: walls }} />
+      {/* Lap-siding lines */}
+      <motion.g stroke={INK} strokeOpacity="0.1" strokeWidth="1" style={{ opacity: walls }}>
+        <line x1="71" y1="130" x2="249" y2="130" />
+        <line x1="71" y1="148" x2="249" y2="148" />
+        <line x1="71" y1="166" x2="249" y2="166" />
+        <line x1="71" y1="184" x2="249" y2="184" />
+        <line x1="71" y1="202" x2="249" y2="202" />
+      </motion.g>
 
       {/* Roof drops on. */}
       <motion.path d="M58 114 L160 50 L262 114 Z" fill={OAK} stroke={INK} strokeWidth="2" strokeLinejoin="round" style={{ opacity: roof, y: roofY }} />
+      {/* Shingle courses */}
+      <motion.g stroke={OAK_DIM} strokeWidth="1.2" strokeLinecap="round" style={{ opacity: roof, y: roofY }}>
+        <line x1="112" y1="80" x2="208" y2="80" />
+        <line x1="84" y1="98" x2="236" y2="98" />
+      </motion.g>
       <motion.line x1="58" y1="114" x2="262" y2="114" stroke={INK} strokeWidth="2" style={{ opacity: roof }} />
 
       {/* Chimney */}
       <motion.rect x="206" y="62" width="16" height="34" fill={OAK_DIM} stroke={INK} strokeWidth="1.5" style={{ opacity: finish, y: chimneyY }} />
 
-      {/* Door */}
+      {/* Door — frame, slab, raised panels, knob, stoop */}
       <motion.g style={{ opacity: openings }}>
+        <rect x="147" y="155" width="34" height="51" fill={PAPER2} stroke={INK} strokeWidth="1.5" />
         <rect x="150" y="158" width="28" height="48" fill={OAK_DIM} stroke={INK} strokeWidth="1.5" />
-        <circle cx="172" cy="183" r="1.8" fill={AMBER} />
+        <rect x="154" y="162" width="20" height="17" fill="none" stroke={INK} strokeOpacity="0.4" strokeWidth="1" />
+        <rect x="154" y="183" width="20" height="19" fill="none" stroke={INK} strokeOpacity="0.4" strokeWidth="1" />
+        <circle cx="173" cy="183" r="1.8" fill={AMBER} />
+        <rect x="144" y="206" width="40" height="5" fill={INK} opacity="0.85" />
+      </motion.g>
+
+      {/* Shrubs by the entry — appear at finishing. */}
+      <motion.g style={{ opacity: finish }}>
+        <circle cx="130" cy="203" r="7" fill="#4A6B3A" />
+        <circle cx="137" cy="205" r="5" fill="#5A7B47" />
+        <circle cx="196" cy="204" r="6" fill="#4A6B3A" />
       </motion.g>
 
       {/* Windows — warm "lights on" at finishing. */}
