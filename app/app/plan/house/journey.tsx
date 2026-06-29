@@ -9,7 +9,7 @@
 // - GSAP ScrollTrigger draws a blueprint plumb-line down the stages as you
 //   scroll and gives the hero a gentle parallax — the scroll-driven sequence.
 // - Each stage owns its goal levels and writes through the existing actions.
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   animate,
@@ -17,43 +17,110 @@ import {
   useReducedMotion,
 } from "motion/react";
 import { Reveal } from "@/lib/motion";
-import type { GrowthGoal } from "@/lib/database.types";
+import type { GoalLevel, GrowthGoal } from "@/lib/database.types";
 import { HouseScene } from "./house-scene";
-import { StageSection } from "./stage-section";
+import { StageSection, type StageActions } from "./stage-section";
 import {
   STAGES,
   buildPhaseLabel,
+  computeBuild,
   type BuildState,
 } from "./progress";
+
+// Top level has no parent; everything else ladders up one level. Used only to
+// flag demo goals as connected/disconnected (mirrors the server action).
+const PARENT_LEVEL: Record<GoalLevel, GoalLevel | null> = {
+  ten_year: null,
+  five_year: "ten_year",
+  six_month: "five_year",
+  monthly: "six_month",
+  weekly: "monthly",
+  daily: "weekly",
+};
 
 export function PlanJourney({
   goals,
   build,
   tenYearText,
+  demo = false,
 }: {
   goals: GrowthGoal[];
   build: BuildState;
   tenYearText: string | null;
+  // Dev-only: drive add/complete/delete through local state (no Supabase) so
+  // the journey is fully interactive in the /preview route. Production passes
+  // the real server-backed goals and leaves this false.
+  demo?: boolean;
 }) {
   const reduce = useReducedMotion();
-  const houseBuild = useMotionValue(reduce ? build.overall : 0);
   const heroRef = useRef<HTMLDivElement>(null);
   const stagesRef = useRef<HTMLDivElement>(null);
   const railFillRef = useRef<HTMLDivElement>(null);
+
+  // In demo mode goals live in local state; otherwise they come straight from
+  // the server-rendered props.
+  const [demoGoals, setDemoGoals] = useState<GrowthGoal[]>(goals);
+  const effectiveGoals = demo ? demoGoals : goals;
+  const effectiveBuild = demo ? computeBuild(demoGoals) : build;
+
+  const demoActions = useMemo<StageActions>(
+    () => ({
+      addGoal: async (input) => {
+        const { level, body, parent_goal_id } = input as {
+          level: GoalLevel;
+          body: string;
+          parent_goal_id: string | null;
+        };
+        setDemoGoals((g) => [
+          ...g,
+          {
+            id: crypto.randomUUID(),
+            user_id: "demo",
+            plan_id: "demo",
+            level,
+            parent_goal_id: parent_goal_id ?? null,
+            body,
+            status: "open",
+            period_start: null,
+            period_end: null,
+            ladders_up: PARENT_LEVEL[level] === null || !!parent_goal_id,
+            created_at: new Date().toISOString(),
+            updated_at: null,
+          },
+        ]);
+        return { ok: true };
+      },
+      setGoalStatus: async (input) => {
+        const { id, status } = input as { id: string; status: "open" | "done" };
+        setDemoGoals((g) =>
+          g.map((x) => (x.id === id ? { ...x, status } : x)),
+        );
+        return { ok: true };
+      },
+      deleteGoal: async (input) => {
+        const { id } = input as { id: string };
+        setDemoGoals((g) => g.filter((x) => x.id !== id));
+        return { ok: true };
+      },
+    }),
+    [],
+  );
+
+  const houseBuild = useMotionValue(reduce ? effectiveBuild.overall : 0);
 
   // Build the house up to real progress on open, and re-settle when progress
   // changes (a completed goal). Honors reduced motion (snaps, no animation).
   useEffect(() => {
     if (reduce) {
-      houseBuild.set(build.overall);
+      houseBuild.set(effectiveBuild.overall);
       return;
     }
-    const controls = animate(houseBuild, build.overall, {
+    const controls = animate(houseBuild, effectiveBuild.overall, {
       duration: 1.7,
       ease: [0.22, 0.61, 0.36, 1],
     });
     return () => controls.stop();
-  }, [build.overall, reduce, houseBuild]);
+  }, [effectiveBuild.overall, reduce, houseBuild]);
 
   // GSAP scroll sequence: the plumb-line draw + hero parallax. Loaded client-
   // side only; skipped entirely under reduced motion.
@@ -109,29 +176,30 @@ export function PlanJourney({
     };
   }, [reduce]);
 
-  const phase = buildPhaseLabel(build.overall);
+  const phase = buildPhaseLabel(effectiveBuild.overall);
 
   return (
     <div>
       {/* Hero */}
       <div ref={heroRef} className="px-1">
-        <HouseScene progress={houseBuild} realOverall={build.overall} />
+        <HouseScene progress={houseBuild} realOverall={effectiveBuild.overall} />
         <div className="mt-4 grid grid-cols-2 gap-2.5">
           <div className="rounded-lg border border-rule bg-chalk p-4">
             <p className="type-cap text-graphite">BUILD PHASE</p>
             <p className="type-h2 mt-1.5 text-ink">{phase}</p>
             <p className="type-caption mt-1 text-graphite">
-              {build.totalDone} of {build.totalGoals} goals complete
+              {effectiveBuild.totalDone} of {effectiveBuild.totalGoals} goals
+              complete
             </p>
           </div>
           <div className="rounded-lg border border-rule bg-chalk p-4">
             <p className="type-cap text-graphite">STAGES STARTED</p>
             <p className="type-h2 mt-1.5 text-ink">
-              {build.reached}
+              {effectiveBuild.reached}
               <span className="type-spec text-graphite"> / {STAGES.length}</span>
             </p>
             <p className="type-caption mt-1 text-graphite">
-              {build.reached === STAGES.length
+              {effectiveBuild.reached === STAGES.length
                 ? "Every level has work in it."
                 : "Draw the next level to keep building."}
             </p>
@@ -186,13 +254,15 @@ export function PlanJourney({
         />
 
         <div className="space-y-5 pl-9">
-          {build.stages.map((sp) => (
+          {effectiveBuild.stages.map((sp) => (
             <Reveal key={sp.def.key} as="boardUp" amount={0.25}>
               <StageSection
                 def={sp.def}
-                goals={goals}
+                goals={effectiveGoals}
                 stageProgress={sp}
                 northStar={sp.def.key === "vision" ? tenYearText : null}
+                actions={demo ? demoActions : undefined}
+                skipRefresh={demo}
               />
             </Reveal>
           ))}

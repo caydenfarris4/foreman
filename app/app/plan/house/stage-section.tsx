@@ -16,6 +16,19 @@ import type { GoalLevel, GrowthGoal } from "@/lib/database.types";
 import { addGoal, deleteGoal, setGoalStatus } from "../actions";
 import type { StageDef, StageProgress } from "./progress";
 
+type ActionResult = { ok: true } | { ok: false; error?: string };
+
+// The three mutations a stage performs. Defaults to the real server actions;
+// the dev-only preview injects local-state versions so the journey is fully
+// interactive without Supabase. Production behavior is unchanged.
+export interface StageActions {
+  addGoal: (input: unknown) => Promise<ActionResult>;
+  setGoalStatus: (input: unknown) => Promise<ActionResult>;
+  deleteGoal: (input: unknown) => Promise<ActionResult>;
+}
+
+const DEFAULT_ACTIONS: StageActions = { addGoal, setGoalStatus, deleteGoal };
+
 const LEVEL_META: Record<
   GoalLevel,
   { label: string; hint: string; addNoun: string }
@@ -75,22 +88,26 @@ export function StageSection({
   goals,
   stageProgress,
   northStar,
+  actions = DEFAULT_ACTIONS,
+  skipRefresh = false,
 }: {
   def: StageDef;
   goals: GrowthGoal[];
   stageProgress: StageProgress;
   northStar?: string | null;
+  actions?: StageActions;
+  skipRefresh?: boolean;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  function run(fn: () => Promise<{ ok: boolean; error?: string }>) {
+  function run(fn: () => Promise<ActionResult>) {
     setError(null);
     start(async () => {
       const res = await fn();
       if (!res.ok) setError(res.error ?? "Something broke.");
-      else router.refresh();
+      else if (!skipRefresh) router.refresh();
     });
   }
 
@@ -142,10 +159,12 @@ export function StageSection({
             level={level}
             goals={goals}
             pending={pending}
-            onToggle={(id, status) => run(() => setGoalStatus({ id, status }))}
-            onDelete={(id) => run(() => deleteGoal({ id }))}
+            onToggle={(id, status) =>
+              run(() => actions.setGoalStatus({ id, status }))
+            }
+            onDelete={(id) => run(() => actions.deleteGoal({ id }))}
             onAdd={(body, parentId) =>
-              run(() => addGoal({ level, body, parent_goal_id: parentId }))
+              run(() => actions.addGoal({ level, body, parent_goal_id: parentId }))
             }
             showLabel={def.levels.length > 1}
           />
