@@ -61,8 +61,13 @@ the report feeding back into coaching. UI/UX polish is a separate pass.
   the free-text plan to the eleven principles; the user confirms/edits (final
   say) before it is stored. Governed by `lib/prompts.ts` MAPPING_SYSTEM_PROMPT
   and parsed by `parseMappingJson` (drops anything outside the fixed vocabulary).
-- `app/app/plan/cascade.tsx` — the six-level goal cascade: add/complete/delete
-  goals per level, link to a parent, with gentle disconnected-goal flagging (§4.4).
+- `app/app/plan/house/` — the six-level goal cascade, presented as the five-stage
+  "build your house" journey (Vision groups ten-/five-year). `journey.tsx`
+  orchestrates the progressive build visualization (2D SVG always, R3F 3D behind
+  a perf gate) and the GSAP scroll sequence; `stage-section.tsx` does
+  add/complete/delete per level with gentle disconnected-goal flagging (§4.4);
+  `progress.ts` maps goals → build state. All writes go through the existing
+  `actions.ts` (unchanged).
 - `app/app/plan/actions.ts` — server actions (RLS-enforced) for plan, principle
   selection, goals, and mapping confirmation.
 

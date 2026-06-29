@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PhaseTag } from "@/components/ui/phase-tag";
+import { Reveal, Stagger, StaggerItem } from "@/lib/motion";
 import { createClient } from "@/lib/supabase/server";
 import { promptForDay } from "@/lib/prompts/daily";
 import { reflectionForDay } from "@/lib/prompts/reflection";
@@ -299,7 +300,8 @@ export default async function DashboardPage({
       ) : null}
 
       {/* Stats grid */}
-      <div className="mx-3 grid grid-cols-2 gap-2.5">
+      <Stagger className="mx-3 grid grid-cols-2 gap-2.5">
+        <StaggerItem>
         <Card className="p-4">
           <p className="type-cap text-graphite">
             SITE DAYS · {monthName.toUpperCase()}
@@ -312,6 +314,8 @@ export default async function DashboardPage({
             {dayOfMonth} day{dayOfMonth === 1 ? "" : "s"} into {monthName}.
           </p>
         </Card>
+        </StaggerItem>
+        <StaggerItem>
         <Card className="p-4">
           <p className="type-cap text-graphite">NEXT RETRO</p>
           <p className="type-h1 mt-2 text-ink">
@@ -333,7 +337,8 @@ export default async function DashboardPage({
               : `Set for ${capitalize(profile.retro_day)}.`}
           </p>
         </Card>
-      </div>
+        </StaggerItem>
+      </Stagger>
 
       {/* Recent insight */}
       {recentSituation ? (
@@ -368,7 +373,7 @@ export default async function DashboardPage({
 
       {/* Phase build strip */}
       {totalSituations > 0 ? (
-        <div className="mx-3 space-y-2 pb-4">
+        <Reveal as="boardUp" className="mx-3 space-y-2 pb-4">
           <p className="type-cap text-graphite">YOUR BUILD</p>
           <Card className="p-4">
             <div className="grid grid-cols-3 gap-3">
@@ -400,7 +405,7 @@ export default async function DashboardPage({
               {phaseSummary(counts)}
             </p>
           </Card>
-        </div>
+        </Reveal>
       ) : null}
     </div>
   );

@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { motion } from "motion/react";
 import { Wordmark } from "@/components/ui/wordmark";
 import { cn } from "@/lib/utils";
+import { settle } from "@/lib/motion";
 
 interface AppShellProps {
   initials: string;
@@ -174,14 +176,24 @@ export function AppShell({
         </div>
       ) : null}
 
-      <main className="container max-w-2xl">{children}</main>
+      <main className="container max-w-2xl">
+        {/* Subtle rise-in on each navigation — a board set into place. */}
+        <motion.div
+          key={pathname}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.32, ease: [0.22, 0.61, 0.36, 1] }}
+        >
+          {children}
+        </motion.div>
+      </main>
 
       <nav
         aria-label="Primary"
         className="fixed inset-x-0 bottom-0 z-40 bg-gradient-to-t from-paper to-transparent pb-6 pt-10"
       >
         <div className="container max-w-2xl">
-          <div className="mx-4 grid grid-cols-4 gap-1 rounded-[14px] border border-rule bg-chalk p-1.5 shadow-[0_12px_32px_rgba(26,24,22,0.10)]">
+          <div className="mx-4 grid grid-cols-4 gap-1 rounded-[14px] border border-rule bg-chalk p-1.5 shadow-liftStrong">
             {TABS.map((t) => {
               const isActive = t.id === activeTab;
               return (
@@ -189,13 +201,22 @@ export function AppShell({
                   key={t.id}
                   href={t.href}
                   className={cn(
-                    "flex flex-col items-center gap-0.5 rounded-[9px] py-2 transition-colors",
-                    isActive ? "bg-paper2 text-ink" : "text-graphite",
+                    "relative flex flex-col items-center gap-0.5 rounded-[9px] py-2 transition-colors",
+                    isActive ? "text-ink" : "text-graphite hover:text-ink2",
                   )}
                 >
-                  {t.icon}
-                  <span className="type-cap" style={{ fontSize: 10 }}>
-                    {t.label}
+                  {isActive ? (
+                    <motion.span
+                      layoutId="tab-pill"
+                      transition={settle}
+                      className="absolute inset-0 rounded-[9px] bg-paper2"
+                    />
+                  ) : null}
+                  <span className="relative z-10 flex flex-col items-center gap-0.5">
+                    {t.icon}
+                    <span className="type-cap" style={{ fontSize: 10 }}>
+                      {t.label}
+                    </span>
                   </span>
                 </Link>
               );

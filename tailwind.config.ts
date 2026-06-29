@@ -61,16 +61,47 @@ const config: Config = {
       letterSpacing: {
         cap: "0.06em",
       },
+      backgroundImage: {
+        // Faint schematic grid — the texture of graph paper / a drafting table.
+        // Layered behind blueprint surfaces at low opacity.
+        "blueprint-grid":
+          "linear-gradient(rgba(30,58,95,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(30,58,95,0.07) 1px, transparent 1px)",
+        // Warm version for paper surfaces.
+        "draft-grid":
+          "linear-gradient(rgba(26,24,22,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(26,24,22,0.05) 1px, transparent 1px)",
+      },
+      backgroundSize: {
+        grid: "22px 22px",
+        "grid-sm": "12px 12px",
+      },
+      boxShadow: {
+        // A panel lifted just off the drafting table.
+        lift: "0 1px 0 rgba(26,24,22,0.04), 0 10px 30px rgba(26,24,22,0.06)",
+        liftStrong: "0 12px 32px rgba(26,24,22,0.10)",
+      },
       keyframes: {
         spin: { to: { transform: "rotate(360deg)" } },
         blink: {
           "0%, 50%": { opacity: "1" },
           "50.01%, 100%": { opacity: "0" },
         },
+        // A board lifted into place.
+        "board-up": {
+          from: { opacity: "0", transform: "translateY(14px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        // Schematic surveying line sweeping across.
+        survey: {
+          "0%": { transform: "translateX(-100%)", opacity: "0" },
+          "20%, 80%": { opacity: "0.5" },
+          "100%": { transform: "translateX(220%)", opacity: "0" },
+        },
       },
       animation: {
         "spin-slow": "spin 0.8s linear infinite",
         caret: "blink 1s steps(2) infinite",
+        "board-up": "board-up 0.5s cubic-bezier(0.22,0.61,0.36,1) both",
+        survey: "survey 2.6s ease-in-out infinite",
       },
     },
   },
