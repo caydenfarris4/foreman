@@ -18,7 +18,6 @@ import {
   ContactShadows,
   AdaptiveDpr,
   PerformanceMonitor,
-  SoftShadows,
 } from "@react-three/drei";
 import { type MotionValue } from "motion/react";
 import * as THREE from "three";
@@ -59,6 +58,16 @@ const WH = 1.8; // wall height
 const FH = 0.4; // foundation height
 const WALL_TOP = FH + WH;
 
+// Gable roof, built from two pitched planes (predictable, unlike a rotated
+// prism) plus pentagon gable-end fills under the slopes.
+const OVERHANG = 0.35;
+const HALF_SPAN = W / 2 + OVERHANG; // eave reaches here from the ridge
+const RISE = 1.0; // ridge height above the wall top
+const SLANT = Math.hypot(HALF_SPAN, RISE);
+const ROOF_ANGLE = Math.atan2(RISE, HALF_SPAN);
+const ROOF_LEN = D + OVERHANG * 2;
+const GABLE_R0 = RISE * (1 - W / 2 / HALF_SPAN); // roof height at the wall edge
+
 // A group that builds into place as progress crosses its window. `mode`:
 //   up   — grows from its base (foundation, walls, chimney)
 //   down — drops from above (the roof landing on the frame)
@@ -83,13 +92,14 @@ function Build({
     const group = g.current;
     if (!group) return;
     const t = seg(progress.get(), range[0], range[1]);
-    if (mode === "pop") {
+    if (mode === "pop" || mode === "down") {
+      // Uniform scale so rotated roof planes don't skew while building in.
       const s = damp(group.scale.x, Math.max(0.0001, t), 9, dt);
       group.scale.setScalar(s);
+      if (mode === "down") group.position.y = position[1] + (1 - s) * drop;
     } else {
       const s = damp(group.scale.y, Math.max(0.0001, t), 8, dt);
       group.scale.y = s;
-      if (mode === "down") group.position.y = position[1] + (1 - s) * drop;
     }
   });
   return (
@@ -177,6 +187,7 @@ function HouseModel({
       bumpMap: sidingBump(q),
       bumpScale: 0.04,
       roughness: 0.82,
+      side: THREE.DoubleSide, // gable fills are single planes
     });
     const wood = new THREE.MeshStandardMaterial({
       map: woodColor(q),
@@ -207,11 +218,27 @@ function HouseModel({
     return { siding, wood, shingle, brick, trim, leaf };
   }, [q]);
 
-  // Dispose generated materials on unmount (textures are cached/shared).
+  // Pentagon gable-end fill that sits exactly under the roof slopes.
+  const gableGeo = useMemo(() => {
+    const s = new THREE.Shape();
+    s.moveTo(-W / 2, 0);
+    s.lineTo(W / 2, 0);
+    s.lineTo(W / 2, GABLE_R0);
+    s.lineTo(0, RISE);
+    s.lineTo(-W / 2, GABLE_R0);
+    s.closePath();
+    return new THREE.ShapeGeometry(s);
+  }, []);
+
+  // Dispose generated materials/geometry on unmount (textures are shared).
   useEffect(() => {
     const m = mats;
-    return () => Object.values(m).forEach((x) => x.dispose());
-  }, [mats]);
+    const g = gableGeo;
+    return () => {
+      Object.values(m).forEach((x) => x.dispose());
+      g.dispose();
+    };
+  }, [mats, gableGeo]);
 
   useFrame((_, dt) => {
     if (!root.current) return;
@@ -268,29 +295,38 @@ function HouseModel({
               </mesh>
             ))
           : null}
+        {/* gable-end fills under the roof slopes (front + back) */}
+        <mesh geometry={gableGeo} position={[0, WH, D / 2]} material={mats.siding} />
+        <mesh geometry={gableGeo} position={[0, WH, -D / 2]} material={mats.siding} />
       </Build>
 
-      {/* Roof (shingled gable, overhanging eaves + ridge cap + fascia) */}
+      {/* Roof — two pitched shingle planes + ridge cap, dropping onto the frame */}
       <Build
         progress={progress}
         range={[0.58, 0.8]}
         mode="down"
-        drop={1.3}
+        drop={1.5}
         position={[0, WALL_TOP, 0]}
       >
-        <mesh castShadow rotation={[0, Math.PI / 6, 0]} position={[0, 0.62, 0]} material={mats.shingle}>
-          <cylinderGeometry args={[1.5, 1.5, D + 0.7, 3, 1]} />
+        <mesh
+          castShadow
+          position={[-HALF_SPAN / 2, RISE / 2, 0]}
+          rotation={[0, 0, ROOF_ANGLE]}
+          material={mats.shingle}
+        >
+          <boxGeometry args={[SLANT, 0.1, ROOF_LEN]} />
+        </mesh>
+        <mesh
+          castShadow
+          position={[HALF_SPAN / 2, RISE / 2, 0]}
+          rotation={[0, 0, -ROOF_ANGLE]}
+          material={mats.shingle}
+        >
+          <boxGeometry args={[SLANT, 0.1, ROOF_LEN]} />
         </mesh>
         {/* ridge cap */}
-        <mesh position={[0, 1.36, 0]} material={mats.wood}>
-          <boxGeometry args={[0.12, 0.12, D + 0.7]} />
-        </mesh>
-        {/* fascia boards along the eaves */}
-        <mesh position={[0, 0.04, (D + 0.7) / 2]} material={mats.trim}>
-          <boxGeometry args={[W + 0.7, 0.14, 0.06]} />
-        </mesh>
-        <mesh position={[0, 0.04, -(D + 0.7) / 2]} material={mats.trim}>
-          <boxGeometry args={[W + 0.7, 0.14, 0.06]} />
+        <mesh position={[0, RISE + 0.02, 0]} material={mats.wood}>
+          <boxGeometry args={[0.16, 0.12, ROOF_LEN]} />
         </mesh>
       </Build>
 
@@ -420,14 +456,14 @@ export default function House3D({ progress }: { progress: MotionValue<number> })
     <Canvas
       dpr={dpr}
       shadows
-      camera={{ position: [4.6, 3.4, 5.4], fov: 36 }}
+      camera={{ position: [5.6, 3.7, 6.6], fov: 32 }}
+      onCreated={({ camera }) => camera.lookAt(0, 1.35, 0)}
       gl={{ antialias: tier === "high", powerPreference: "high-performance" }}
       style={{ touchAction: "pan-y" }}
     >
       <color attach="background" args={["#E4ECF4"]} />
-      <fog attach="fog" args={["#dde7f1", 12, 22]} />
+      <fog attach="fog" args={["#dde7f1", 13, 24]} />
 
-      {tier === "high" ? <SoftShadows size={18} samples={8} focus={0.7} /> : null}
       <Environment />
 
       <hemisphereLight args={["#d4e4f5", "#b29a78", 0.55]} />

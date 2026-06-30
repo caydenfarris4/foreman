@@ -6,7 +6,7 @@
 // Supabase auth or a seeded account — it mounts the REAL <PlanJourney> in demo
 // mode (local-state goals) with mock data at a few build levels. It is excluded
 // from the auth middleware and 404s in production. Not part of the product.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import { MotionProvider } from "@/lib/motion";
 import { PlanJourney } from "@/app/app/plan/house/journey";
@@ -75,9 +75,20 @@ const SCENARIOS = [
 ];
 
 export default function HousePreviewPage() {
-  if (process.env.NODE_ENV === "production") notFound();
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.NEXT_PUBLIC_ENABLE_PREVIEW !== "1"
+  ) {
+    notFound();
+  }
 
   const [scenario, setScenario] = useState("progress");
+  // Apply ?scenario= after mount so SSR and first client render match (no
+  // hydration mismatch).
+  useEffect(() => {
+    const s = new URLSearchParams(window.location.search).get("scenario");
+    if (s && ["empty", "progress", "finished"].includes(s)) setScenario(s);
+  }, []);
   const seed = seedFor(scenario);
 
   return (
