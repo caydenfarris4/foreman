@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import { MotionProvider } from "@/lib/motion";
 import { PlanJourney } from "@/app/app/plan/house/journey";
+import { BlueprintWizard } from "@/app/app/plan/blueprint-wizard";
 import { computeBuild } from "@/app/app/plan/house/progress";
 import type { GoalLevel, GoalStatus, GrowthGoal } from "@/lib/database.types";
 
@@ -83,11 +84,14 @@ export default function HousePreviewPage() {
   }
 
   const [scenario, setScenario] = useState("progress");
-  // Apply ?scenario= after mount so SSR and first client render match (no
-  // hydration mismatch).
+  const [view, setView] = useState<"journey" | "wizard">("journey");
+  // Apply ?scenario= / ?view= after mount so SSR and first client render match
+  // (no hydration mismatch).
   useEffect(() => {
-    const s = new URLSearchParams(window.location.search).get("scenario");
+    const params = new URLSearchParams(window.location.search);
+    const s = params.get("scenario");
     if (s && ["empty", "progress", "finished"].includes(s)) setScenario(s);
+    if (params.get("view") === "wizard") setView("wizard");
   }, []);
   const seed = seedFor(scenario);
 
@@ -126,15 +130,19 @@ export default function HousePreviewPage() {
           </header>
 
           <div className="mt-6">
-            {/* Remount per scenario so the on-open construction animation
-                replays and local demo state reseeds. */}
-            <PlanJourney
-              key={scenario}
-              demo
-              goals={seed}
-              build={computeBuild(seed)}
-              tenYearText={TEN_YEAR}
-            />
+            {view === "wizard" ? (
+              <BlueprintWizard />
+            ) : (
+              /* Remount per scenario so the on-open construction animation
+                 replays and local demo state reseeds. */
+              <PlanJourney
+                key={scenario}
+                demo
+                goals={seed}
+                build={computeBuild(seed)}
+                tenYearText={TEN_YEAR}
+              />
+            )}
           </div>
         </main>
       </div>

@@ -97,6 +97,16 @@ export default async function DashboardPage({
   const profile = profileRow as Profile | null;
   if (!profile) return null;
 
+  // Funnel bridge: a brand-new user with no blueprint should be guided to build
+  // one, not stranded on Today (docs/PLAN_HOUSE_UX_FLOW.md).
+  const { data: planRow } = await supabase
+    .from("growth_plans")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("is_current", true)
+    .maybeSingle();
+  const hasPlan = !!planRow;
+
   const today = todayInTimezone(profile.timezone);
   const weekday = weekdayInTimezone(profile.timezone);
   const onSabbath = profile.sabbath_day === weekday;
@@ -218,6 +228,26 @@ export default async function DashboardPage({
           {profile.name ? `Morning, ${profile.name}.` : "Welcome back."}
         </h1>
       </header>
+
+      {!hasPlan ? (
+        <Reveal as="panelRise" className="mx-3">
+          <Link
+            href="/app/plan"
+            className="block overflow-hidden rounded-lg border border-oak bg-oak-wash p-5 transition-colors hover:bg-oak/20"
+          >
+            <p className="type-cap text-oak-dim">START HERE · YOUR BLUEPRINT</p>
+            <h2 className="type-h2 mt-1.5 text-ink">Draw your blueprint first.</h2>
+            <p className="type-body-sm mt-1.5 text-graphite">
+              Foreman measures today&apos;s work against where you said you want
+              to go. Three minutes to lay the foundation — then your house starts
+              rising.
+            </p>
+            <span className="type-label mt-3 inline-flex items-center gap-1 text-oak-dim">
+              Build your house <ArrowIcon size={14} />
+            </span>
+          </Link>
+        </Reveal>
+      ) : null}
 
       {onSabbath ? (
         <Card className="mx-3 p-5">
