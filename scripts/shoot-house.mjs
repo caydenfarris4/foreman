@@ -11,12 +11,17 @@ const BASE = `http://localhost:${PORT}`;
 const OUT = process.env.OUT_DIR || "/tmp/house-shots";
 const CHROMIUM = process.env.PLAYWRIGHT_CHROMIUM_PATH || "/opt/pw-browsers/chromium";
 
-const SHOTS = [
-  { name: "1-high-finished", q: "house3d=on&tier=high&scenario=finished", wait: 5500 },
-  { name: "2-high-midbuild", q: "house3d=on&tier=high&scenario=progress", wait: 5000 },
-  { name: "3-standard-finished", q: "house3d=on&tier=standard&scenario=finished", wait: 5000 },
-  { name: "4-2d-finished", q: "house3d=off&scenario=finished", wait: 3500 },
-];
+const SHOTS = process.env.WIZARD
+  ? [
+      { name: "wizard-intro", q: "view=wizard&house3d=on&tier=standard&scenario=empty", wait: 5000 },
+      { name: "journey-foundation", q: "house3d=off&scenario=empty", wait: 3500 },
+    ]
+  : [
+      { name: "1-high-finished", q: "house3d=on&tier=high&scenario=finished", wait: 5500 },
+      { name: "2-high-midbuild", q: "house3d=on&tier=high&scenario=progress", wait: 5000 },
+      { name: "3-standard-finished", q: "house3d=on&tier=standard&scenario=finished", wait: 5000 },
+      { name: "4-2d-finished", q: "house3d=off&scenario=finished", wait: 3500 },
+    ];
 
 async function waitForServer(url, timeoutMs) {
   const start = Date.now();

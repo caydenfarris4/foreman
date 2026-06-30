@@ -183,6 +183,15 @@ export function PlanJourney({
       {/* Hero */}
       <div ref={heroRef} className="px-1">
         <HouseScene progress={houseBuild} realOverall={effectiveBuild.overall} />
+        {effectiveBuild.totalGoals === 0 ? (
+          <div className="mt-3 rounded-lg border border-oak/30 bg-oak-wash p-3.5">
+            <p className="type-cap text-oak-dim">FOUNDATION LAID</p>
+            <p className="type-body-sm mt-1 text-ink2">
+              Your foundation is poured — because you finished your blueprint.
+              Lay your first board below and the house keeps rising.
+            </p>
+          </div>
+        ) : null}
         <div className="mt-4 grid grid-cols-2 gap-2.5">
           <div className="rounded-lg border border-rule bg-chalk p-4">
             <p className="type-cap text-graphite">BUILD PHASE</p>

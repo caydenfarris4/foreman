@@ -9,6 +9,7 @@ import type {
   Profile,
 } from "@/lib/database.types";
 import { BlueprintForm } from "./blueprint-form";
+import { BlueprintWizard } from "./blueprint-wizard";
 import { PrincipleMapper } from "./principle-mapper";
 import { PlanJourney } from "./house/journey";
 import { computeBuild } from "./house/progress";
@@ -55,23 +56,11 @@ export default async function PlanPage() {
   }
 
   if (!plan) {
-    return (
-      <div className="space-y-6 px-3 pb-8 pt-6">
-        <header className="px-1">
-          <p className="type-cap text-oak-dim">YOUR BLUEPRINT</p>
-          <h1 className="type-h1 mt-2 text-ink">Draw the plan first.</h1>
-          <p className="type-body mt-2 text-graphite">
-            Foreman measures your daily work against where you said you want to
-            go. Start with the direction, then we build down to today.
-          </p>
-        </header>
-        <BlueprintForm initial={null} />
-      </div>
-    );
+    return <BlueprintWizard />;
   }
 
   const selectedKeys = selections.map((s) => s.principle);
-  const build = computeBuild(goals);
+  const build = computeBuild(goals, { hasPlan: true });
 
   return (
     <div className="space-y-6 px-3 pb-8 pt-6">

@@ -132,7 +132,15 @@ export interface BuildState {
 // then fill in as you finish the work.
 const STAGE_FLOOR = 0.35;
 
-export function computeBuild(goals: GrowthGoal[]): BuildState {
+// Endowed progress (Nunes & Drèze): the moment a blueprint exists, the house is
+// not an empty lot — the foundation is laid *because the user finished the
+// blueprint*. The reason is surfaced in the UI; without it the effect vanishes.
+export const FOUNDATION_FLOOR = 0.12;
+
+export function computeBuild(
+  goals: GrowthGoal[],
+  opts: { hasPlan?: boolean } = {},
+): BuildState {
   const active = goals.filter((g) => g.status !== "dropped");
 
   const stages: StageProgress[] = STAGES.map((def) => {
@@ -151,8 +159,11 @@ export function computeBuild(goals: GrowthGoal[]): BuildState {
     s.unlocked = i === 0 || stages[i - 1].hasGoals;
   });
 
-  const overall =
+  const rawOverall =
     stages.reduce((sum, s) => sum + s.score, 0) / STAGE_COUNT;
+  // Endowed floor once a blueprint exists, so a new planner sees a poured
+  // foundation rather than an empty lot.
+  const overall = opts.hasPlan ? Math.max(rawOverall, FOUNDATION_FLOOR) : rawOverall;
   const reached = stages.filter((s) => s.hasGoals).length;
   const totalGoals = active.length;
   const totalDone = active.filter((g) => g.status === "done").length;
