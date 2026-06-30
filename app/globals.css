@@ -95,3 +95,49 @@
     line-height: 1.3;
   }
 }
+
+@layer utilities {
+  /* Drafting-table surface: a faint blueprint grid washed over a blueprint
+     tint. Used behind the house journey and schematic panels. */
+  .surface-blueprint {
+    background-color: #e4ecf4; /* blueprint.wash */
+    background-image: linear-gradient(
+        rgba(30, 58, 95, 0.08) 1px,
+        transparent 1px
+      ),
+      linear-gradient(90deg, rgba(30, 58, 95, 0.08) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+
+  /* Warm paper version of the same grid. */
+  .surface-draft {
+    background-image: linear-gradient(rgba(26, 24, 22, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26, 24, 22, 0.05) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+
+  /* A measured dashed rule, like a dimension line on a drawing. */
+  .dimension-rule {
+    background-image: repeating-linear-gradient(
+      90deg,
+      rgba(30, 58, 95, 0.35) 0,
+      rgba(30, 58, 95, 0.35) 6px,
+      transparent 6px,
+      transparent 11px
+    );
+  }
+}
+
+/* Accessibility contract: anyone who asks for reduced motion gets none.
+   Motion (motion/react) honors this via MotionConfig; this also flattens any
+   GSAP / CSS-driven motion as a belt-and-suspenders fallback. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

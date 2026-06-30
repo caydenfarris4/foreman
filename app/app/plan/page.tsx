@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { principleByKey } from "@/lib/inspection/principles";
@@ -10,8 +9,9 @@ import type {
   Profile,
 } from "@/lib/database.types";
 import { BlueprintForm } from "./blueprint-form";
-import { Cascade } from "./cascade";
 import { PrincipleMapper } from "./principle-mapper";
+import { PlanJourney } from "./house/journey";
+import { computeBuild } from "./house/progress";
 
 export default async function PlanPage() {
   const supabase = await createClient();
@@ -71,40 +71,34 @@ export default async function PlanPage() {
   }
 
   const selectedKeys = selections.map((s) => s.principle);
+  const build = computeBuild(goals);
 
   return (
     <div className="space-y-6 px-3 pb-8 pt-6">
       <header className="px-1">
         <p className="type-cap text-oak-dim">YOUR BLUEPRINT</p>
-        <h1 className="type-h1 mt-2 text-ink">The plan, and the build.</h1>
+        <h1 className="type-h1 mt-2 text-ink">Build your house.</h1>
       </header>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <Link
-          href="/app/plan/checkin"
-          className="flex items-center justify-between rounded-lg bg-ink p-4 text-chalk transition-colors hover:bg-[#2A2620]"
-        >
-          <span>
-            <span className="type-cap text-chalk/55">CASCADE CHECK-IN</span>
-            <span className="type-label mt-1 block">
-              Work today&apos;s goals
-            </span>
-          </span>
-          <span className="type-label">Open →</span>
-        </Link>
-        <Link
-          href="/app/inspection"
-          className="flex items-center justify-between rounded-lg border border-oak bg-oak-wash p-4 text-ink transition-colors hover:bg-oak/20"
-        >
-          <span>
-            <span className="type-cap text-oak-dim">GROWTH INSPECTION</span>
-            <span className="type-label mt-1 block">Walk the site</span>
-          </span>
-          <span className="type-label text-oak-dim">Open →</span>
-        </Link>
-      </div>
+      {/* Centerpiece: the five-stage house journey + progressive build. */}
+      <PlanJourney
+        goals={goals}
+        build={build}
+        tenYearText={plan.ten_year_text}
+      />
 
-      {/* Blueprint summary + edit */}
+      {/* Principle mapping (AI → user-confirmed). */}
+      <PrincipleMapper
+        planId={plan.id}
+        existing={mappings.map((m) => ({
+          principle: m.principle,
+          layer: m.layer,
+          ai_rationale: m.ai_rationale,
+          source: m.source,
+        }))}
+      />
+
+      {/* Blueprint details + edit */}
       <section className="overflow-hidden rounded-lg border border-rule bg-chalk">
         <BlueprintRow label="Ten-year direction" body={plan.ten_year_text} />
         <BlueprintRow label="Five-year milestones" body={plan.five_year_text} />
@@ -142,18 +136,6 @@ export default async function PlanPage() {
           </div>
         </details>
       </section>
-
-      <PrincipleMapper
-        planId={plan.id}
-        existing={mappings.map((m) => ({
-          principle: m.principle,
-          layer: m.layer,
-          ai_rationale: m.ai_rationale,
-          source: m.source,
-        }))}
-      />
-
-      <Cascade goals={goals} />
     </div>
   );
 }

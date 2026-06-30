@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { accessFor, isPaywalled } from "@/lib/billing";
 import type { Profile } from "@/lib/database.types";
+import { MotionProvider } from "@/lib/motion";
 import { AppShell } from "./shell";
 
 async function signOut() {
@@ -67,12 +68,14 @@ export default async function AppLayout({
       : null;
 
   return (
-    <AppShell
-      initials={initials}
-      signOut={signOut}
-      trialBanner={trialBanner}
-    >
-      {children}
-    </AppShell>
+    <MotionProvider>
+      <AppShell
+        initials={initials}
+        signOut={signOut}
+        trialBanner={trialBanner}
+      >
+        {children}
+      </AppShell>
+    </MotionProvider>
   );
 }
