@@ -139,7 +139,7 @@ export default function HousePreviewPage() {
                 key={scenario}
                 demo
                 goals={seed}
-                build={computeBuild(seed)}
+                build={computeBuild(seed, { hasPlan: true })}
                 tenYearText={TEN_YEAR}
               />
             )}

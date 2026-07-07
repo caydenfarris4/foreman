@@ -33,9 +33,11 @@ export function House2D({
 
   const ghost = useTransform(progress, [0, 0.7], [0.5, 0.1], { clamp: true });
 
-  // Foundation slab spreads.
+  // Foundation slab spreads. Opacity snaps in fast so a half-poured slab reads
+  // as wet concrete, not a translucent ghost.
   const foundW = useTransform(foundation, [0, 1], [120, 192]);
   const foundX = useTransform(foundation, [0, 1], [100, 64]);
+  const foundOpacity = useTransform(foundation, [0, 0.35], [0, 1]);
 
   // Frame fades behind finished walls.
   const frameOpacity = useTransform([framing, walls], ([f, w]: number[]) =>
@@ -45,10 +47,14 @@ export function House2D({
   // Walls grow up from the foundation (height + y, no transform-origin needed).
   const wallH = useTransform(walls, [0, 1], [14, 96]);
   const wallY = useTransform(walls, [0, 1], [192, 110]);
+  const wallOpacity = useTransform(walls, [0, 0.3], [0, 1]);
 
-  // Roof drops onto the frame.
-  const roofY = useTransform(roof, [0, 1], [-24, 0]);
-  const chimneyY = useTransform(finish, [0, 1], [-10, 0]);
+  // Roof drops onto the frame — and SEATS early (within 45% of its window) so
+  // a resting mid-build state never shows a roof floating in mid-air. The drop
+  // is an entrance, not a persistent pose.
+  const roofY = useTransform(roof, [0, 0.45], [-24, 0]);
+  const roofOpacity = useTransform(roof, [0, 0.3], [0, 1]);
+  const chimneyY = useTransform(finish, [0, 0.5], [-10, 0]);
 
   // Windows go warm at finishing.
   const winFill = useTransform(finish, [0, 0.5, 1], ["#2C5478", "#2C5478", AMBER]);
@@ -102,7 +108,7 @@ export function House2D({
       </motion.g>
 
       {/* Foundation slab */}
-      <motion.rect y="204" height="12" rx="1" fill={INK} x={foundX} width={foundW} style={{ opacity: foundation }} />
+      <motion.rect y="204" height="12" rx="1" fill={INK} x={foundX} width={foundW} style={{ opacity: foundOpacity }} />
 
       {/* Framing — posts + top plate, recede behind the walls. */}
       <motion.g stroke={OAK_DIM} strokeWidth="3" strokeLinecap="round" style={{ opacity: frameOpacity }}>
@@ -115,9 +121,9 @@ export function House2D({
       </motion.g>
 
       {/* Walls rise from the foundation. */}
-      <motion.rect x="70" width="180" fill={PAPER2} stroke={INK} strokeWidth="2" y={wallY} height={wallH} style={{ opacity: walls }} />
+      <motion.rect x="70" width="180" fill={PAPER2} stroke={INK} strokeWidth="2" y={wallY} height={wallH} style={{ opacity: wallOpacity }} />
       {/* Lap-siding lines */}
-      <motion.g stroke={INK} strokeOpacity="0.1" strokeWidth="1" style={{ opacity: walls }}>
+      <motion.g stroke={INK} strokeOpacity="0.1" strokeWidth="1" style={{ opacity: wallOpacity }}>
         <line x1="71" y1="130" x2="249" y2="130" />
         <line x1="71" y1="148" x2="249" y2="148" />
         <line x1="71" y1="166" x2="249" y2="166" />
@@ -126,13 +132,13 @@ export function House2D({
       </motion.g>
 
       {/* Roof drops on. */}
-      <motion.path d="M58 114 L160 50 L262 114 Z" fill={OAK} stroke={INK} strokeWidth="2" strokeLinejoin="round" style={{ opacity: roof, y: roofY }} />
+      <motion.path d="M58 114 L160 50 L262 114 Z" fill={OAK} stroke={INK} strokeWidth="2" strokeLinejoin="round" style={{ opacity: roofOpacity, y: roofY }} />
       {/* Shingle courses */}
-      <motion.g stroke={OAK_DIM} strokeWidth="1.2" strokeLinecap="round" style={{ opacity: roof, y: roofY }}>
+      <motion.g stroke={OAK_DIM} strokeWidth="1.2" strokeLinecap="round" style={{ opacity: roofOpacity, y: roofY }}>
         <line x1="112" y1="80" x2="208" y2="80" />
         <line x1="84" y1="98" x2="236" y2="98" />
       </motion.g>
-      <motion.line x1="58" y1="114" x2="262" y2="114" stroke={INK} strokeWidth="2" style={{ opacity: roof }} />
+      <motion.line x1="58" y1="114" x2="262" y2="114" stroke={INK} strokeWidth="2" style={{ opacity: roofOpacity }} />
 
       {/* Chimney */}
       <motion.rect x="206" y="62" width="16" height="34" fill={OAK_DIM} stroke={INK} strokeWidth="1.5" style={{ opacity: finish, y: chimneyY }} />

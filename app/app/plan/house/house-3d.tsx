@@ -92,11 +92,20 @@ function Build({
     const group = g.current;
     if (!group) return;
     const t = seg(progress.get(), range[0], range[1]);
+    // Never let a near-zero-scale part render — a box scaled to ~0 in one axis
+    // still rasterizes as a flat sheet on some GPUs (the "white sheet on the
+    // lawn" artifact).
+    group.visible = t > 0.02;
     if (mode === "pop" || mode === "down") {
       // Uniform scale so rotated roof planes don't skew while building in.
       const s = damp(group.scale.x, Math.max(0.0001, t), 9, dt);
       group.scale.setScalar(s);
-      if (mode === "down") group.position.y = position[1] + (1 - s) * drop;
+      // Seat early (by 45% of the window): the drop is an entrance, not a
+      // resting pose — a mid-build house must never show a hovering roof.
+      if (mode === "down") {
+        const seat = Math.min(1, s / 0.45);
+        group.position.y = position[1] + (1 - seat) * drop;
+      }
     } else {
       const s = damp(group.scale.y, Math.max(0.0001, t), 8, dt);
       group.scale.y = s;

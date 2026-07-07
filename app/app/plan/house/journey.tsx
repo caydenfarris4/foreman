@@ -17,6 +17,7 @@ import {
   useReducedMotion,
 } from "motion/react";
 import { Reveal } from "@/lib/motion";
+import { Button } from "@/components/ui/button";
 import type { GoalLevel, GrowthGoal } from "@/lib/database.types";
 import { HouseScene } from "./house-scene";
 import { StageSection, type StageActions } from "./stage-section";
@@ -24,7 +25,9 @@ import {
   STAGES,
   buildPhaseLabel,
   computeBuild,
+  nextMove,
   type BuildState,
+  type StageKey,
 } from "./progress";
 
 // Top level has no parent; everything else ladders up one level. Used only to
@@ -61,7 +64,10 @@ export function PlanJourney({
   // the server-rendered props.
   const [demoGoals, setDemoGoals] = useState<GrowthGoal[]>(goals);
   const effectiveGoals = demo ? demoGoals : goals;
-  const effectiveBuild = demo ? computeBuild(demoGoals) : build;
+  // Demo mode mirrors production: the journey only ever renders with a plan.
+  const effectiveBuild = demo
+    ? computeBuild(demoGoals, { hasPlan: true })
+    : build;
 
   const demoActions = useMemo<StageActions>(
     () => ({
@@ -107,6 +113,36 @@ export function PlanJourney({
   );
 
   const houseBuild = useMotionValue(reduce ? effectiveBuild.overall : 0);
+
+  // The single clear next action, plus an accordion so the five stages aren't a
+  // flat wall. Only the active (next-move) stage is open by default; the rest
+  // collapse to a one-line summary. One open loop at a time.
+  const move = nextMove(effectiveBuild);
+  const [expanded, setExpanded] = useState<Set<StageKey>>(
+    () => new Set<StageKey>([move.stageKey]),
+  );
+  useEffect(() => {
+    setExpanded((prev) =>
+      prev.has(move.stageKey) ? prev : new Set(prev).add(move.stageKey),
+    );
+  }, [move.stageKey]);
+
+  function toggleStage(key: StageKey) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+  function goToNextMove() {
+    setExpanded((prev) => new Set(prev).add(move.stageKey));
+    requestAnimationFrame(() => {
+      document
+        .getElementById(`stage-${move.stageKey}`)
+        ?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    });
+  }
 
   // Build the house up to real progress on open, and re-settle when progress
   // changes (a completed goal). Honors reduced motion (snaps, no animation).
@@ -188,7 +224,7 @@ export function PlanJourney({
             <p className="type-cap text-oak-dim">FOUNDATION LAID</p>
             <p className="type-body-sm mt-1 text-ink2">
               Your foundation is poured — because you finished your blueprint.
-              Lay your first board below and the house keeps rising.
+              Design your first room below and the house keeps rising.
             </p>
           </div>
         ) : null}
@@ -215,14 +251,37 @@ export function PlanJourney({
           </div>
         </div>
 
+        {/* The one clear next move — the most important element after the
+            house itself, so it comes before every secondary destination. */}
+        <Reveal as="panelRise" className="mt-2.5">
+          <div className="rounded-xl border border-blueprint/25 surface-blueprint p-5 shadow-lift">
+            <p className="type-cap text-blueprint">YOUR NEXT MOVE</p>
+            <h2 className="type-h2 mt-1.5 text-ink">{move.title}</h2>
+            <p className="type-body-sm mt-1.5 text-ink2">{move.instruction}</p>
+            <div className="mt-4">
+              {move.kind === "complete" ? (
+                <Button asChild size="md">
+                  <Link href="/app/plan/checkin">{move.cta} →</Link>
+                </Button>
+              ) : (
+                <Button size="md" onClick={goToNextMove}>
+                  {move.cta} →
+                </Button>
+              )}
+            </div>
+          </div>
+        </Reveal>
+
         <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Link
             href="/app/plan/checkin"
             className="flex items-center justify-between rounded-lg bg-ink p-4 text-chalk transition-colors hover:bg-[#2A2620]"
           >
             <span>
-              <span className="type-cap text-chalk/55">CASCADE CHECK-IN</span>
-              <span className="type-label mt-1 block">Work today&apos;s goals</span>
+              <span className="type-cap text-chalk/55">CHECK-INS</span>
+              <span className="type-label mt-1 block">
+                Daily · weekly · monthly
+              </span>
             </span>
             <span className="type-label">Open →</span>
           </Link>
@@ -244,8 +303,8 @@ export function PlanJourney({
         <p className="type-cap text-blueprint">THE BUILD · FIVE STAGES</p>
         <h2 className="type-h2 mt-1 text-ink">From the vision down to today</h2>
         <p className="type-body-sm mt-1 text-graphite">
-          Each stage lays the ground for the next. Scroll the plan and watch the
-          house take shape.
+          Your next move is up top. Open any stage below to add or check off
+          work — one stage at a time.
         </p>
       </Reveal>
 
@@ -272,6 +331,8 @@ export function PlanJourney({
                 northStar={sp.def.key === "vision" ? tenYearText : null}
                 actions={demo ? demoActions : undefined}
                 skipRefresh={demo}
+                collapsed={!expanded.has(sp.def.key)}
+                onHeaderClick={() => toggleStage(sp.def.key)}
               />
             </Reveal>
           ))}

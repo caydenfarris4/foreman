@@ -135,7 +135,12 @@ const STAGE_FLOOR = 0.35;
 // Endowed progress (Nunes & Drèze): the moment a blueprint exists, the house is
 // not an empty lot — the foundation is laid *because the user finished the
 // blueprint*. The reason is surfaced in the UI; without it the effect vanishes.
-export const FOUNDATION_FLOOR = 0.12;
+//
+// 0.20 is deliberate: it lands inside the foundation's visual build window
+// (0.12–0.30, so the slab is visibly poured, not a boundary artifact) AND
+// inside buildPhaseLabel's "Foundation" band — so the badge, the house, and
+// the "foundation laid" card all tell the same story.
+export const FOUNDATION_FLOOR = 0.2;
 
 export function computeBuild(
   goals: GrowthGoal[],
@@ -169,6 +174,84 @@ export function computeBuild(
   const totalDone = active.filter((g) => g.status === "done").length;
 
   return { stages, overall, reached, totalGoals, totalDone };
+}
+
+// The single, unambiguous next action. The whole point: after the blueprint,
+// the user should never face a flat wall of five stages wondering what to do —
+// they get ONE open loop (Zeigarnik) and a clear instruction. Build order is
+// top-down: room (monthly) → measurements (weekly) → materials (daily) → work
+// today's boards. Vision and Blueprint are captured as plan text, so the
+// frontier starts at Room Design.
+export interface NextMove {
+  stageKey: StageKey;
+  level: GoalLevel;
+  /** Imperative headline ("Design your first room"). */
+  title: string;
+  /** One sentence telling them exactly what to write/do. */
+  instruction: string;
+  /** Button label. */
+  cta: string;
+  /** 'add' opens the stage; 'complete' sends them to the cascade check-in. */
+  kind: "add" | "complete";
+}
+
+export function nextMove(build: BuildState): NextMove {
+  const byKey = Object.fromEntries(
+    build.stages.map((s) => [s.def.key, s]),
+  ) as Record<StageKey, StageProgress>;
+
+  if (!byKey.rooms.hasGoals) {
+    return {
+      stageKey: "rooms",
+      level: "monthly",
+      title: "Design your first room",
+      instruction:
+        "Turn your six-month milestone into one focus for this month — the room you'll build first.",
+      cta: "Add a monthly focus",
+      kind: "add",
+    };
+  }
+  if (!byKey.measurements.hasGoals) {
+    return {
+      stageKey: "measurements",
+      level: "weekly",
+      title: "Take this week's measurements",
+      instruction:
+        "What's the one work order this week that moves your monthly focus forward?",
+      cta: "Add a weekly goal",
+      kind: "add",
+    };
+  }
+  if (!byKey.build.hasGoals) {
+    return {
+      stageKey: "build",
+      level: "daily",
+      title: "Lay today's first board",
+      instruction: "Pick one small thing you can finish today. That's the work.",
+      cta: "Add today's task",
+      kind: "add",
+    };
+  }
+  const openToday = byKey.build.total - byKey.build.done;
+  if (openToday > 0) {
+    return {
+      stageKey: "build",
+      level: "daily",
+      title: "Work today's plan",
+      instruction: `You have ${openToday} board${openToday > 1 ? "s" : ""} to lay today. Check one off and the house rises.`,
+      cta: "Open the cascade check-in",
+      kind: "complete",
+    };
+  }
+  return {
+    stageKey: "build",
+    level: "daily",
+    title: "Today's boards are up",
+    instruction:
+      "Nice work. Add tomorrow's task, or design next month's room to keep building.",
+    cta: "Add another task",
+    kind: "add",
+  };
 }
 
 /**
