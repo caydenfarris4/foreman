@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   computeBuild,
   buildPhaseLabel,
+  nextMove,
+  FOUNDATION_FLOOR,
   STAGES,
 } from "@/app/app/plan/house/progress";
 import type { GoalLevel, GoalStatus, GrowthGoal } from "@/lib/database.types";
@@ -68,6 +70,55 @@ describe("computeBuild", () => {
     expect(byKey.vision.unlocked).toBe(true);
     expect(byKey.blueprint.unlocked).toBe(true);
     expect(byKey.rooms.unlocked).toBe(false);
+  });
+
+  it("keeps the endowed foundation state coherent", () => {
+    const b = computeBuild([], { hasPlan: true });
+    expect(b.overall).toBe(FOUNDATION_FLOOR);
+    // The badge must say Foundation — the same story as the "foundation laid"
+    // card. A floor that lands in the "Site survey" band is a contradiction.
+    expect(buildPhaseLabel(b.overall)).toBe("Foundation");
+    // And it must sit strictly inside the slab's visual build window
+    // (0.12–0.30) so the house actually shows poured concrete.
+    expect(FOUNDATION_FLOOR).toBeGreaterThan(0.12);
+    expect(FOUNDATION_FLOOR).toBeLessThan(0.3);
+    // Endowment never reduces earned progress.
+    const earned = computeBuild(
+      (["ten_year", "five_year", "six_month", "monthly", "weekly", "daily"] as const).map(
+        (l) => goal(l, "done"),
+      ),
+      { hasPlan: true },
+    );
+    expect(earned.overall).toBeCloseTo(1, 5);
+  });
+
+  it("points to the next single move down the cascade", () => {
+    // Fresh blueprint, no goals → design the first room.
+    expect(nextMove(computeBuild([], { hasPlan: true })).stageKey).toBe("rooms");
+    expect(nextMove(computeBuild([], { hasPlan: true })).level).toBe("monthly");
+
+    // Has a monthly → take this week's measurements.
+    expect(nextMove(computeBuild([goal("monthly")])).stageKey).toBe(
+      "measurements",
+    );
+    // Has monthly + weekly → lay today's board.
+    expect(
+      nextMove(computeBuild([goal("monthly"), goal("weekly")])).stageKey,
+    ).toBe("build");
+    // Has an open daily → complete it (sends to check-in).
+    const m = nextMove(
+      computeBuild([goal("monthly"), goal("weekly"), goal("daily")]),
+    );
+    expect(m.kind).toBe("complete");
+    // All daily done → encourage the next add.
+    const allDone = nextMove(
+      computeBuild([
+        goal("monthly", "done"),
+        goal("weekly", "done"),
+        goal("daily", "done"),
+      ]),
+    );
+    expect(allDone.kind).toBe("add");
   });
 
   it("reaches a fully built house when every stage is complete", () => {

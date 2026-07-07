@@ -28,14 +28,17 @@ import {
   PRINCIPLES,
 } from "@/lib/inspection/principles";
 import { HouseScene } from "./house/house-scene";
-import { STAGES } from "./house/progress";
+import { FOUNDATION_FLOOR, STAGES } from "./house/progress";
 import { savePlan } from "./actions";
 
 const MIN_TEN = 200;
 
 // How "built" the house looks after each committed step — the foundation pours
-// and the first framing rises as the plan comes together.
-const STEP_BUILD = [0.02, 0.12, 0.18, 0.24, 0.32];
+// as the plan comes together. The final step lands EXACTLY on the endowed
+// FOUNDATION_FLOOR the journey opens with, so progress never moves backwards
+// after saving (a house that shrinks right after your biggest commitment is
+// loss-aversion poison).
+const STEP_BUILD = [0.02, 0.08, 0.12, 0.16, FOUNDATION_FLOOR];
 
 const STEP_CAPTION = [
   "An empty lot — and a blueprint waiting to be drawn.",

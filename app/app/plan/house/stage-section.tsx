@@ -90,6 +90,8 @@ export function StageSection({
   northStar,
   actions = DEFAULT_ACTIONS,
   skipRefresh = false,
+  collapsed = false,
+  onHeaderClick,
 }: {
   def: StageDef;
   goals: GrowthGoal[];
@@ -97,6 +99,10 @@ export function StageSection({
   northStar?: string | null;
   actions?: StageActions;
   skipRefresh?: boolean;
+  /** Accordion: render only the header row. */
+  collapsed?: boolean;
+  /** When set, the header becomes a toggle button. */
+  onHeaderClick?: () => void;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -113,31 +119,75 @@ export function StageSection({
 
   const { done, total, ratio } = stageProgress;
 
-  return (
-    <section
-      data-stage-card
-      className={cn(
-        "relative rounded-xl border bg-chalk p-5 shadow-lift transition-colors",
-        stageProgress.hasGoals ? "border-rule" : "border-dashed border-ruleStrong",
-      )}
-    >
-      {/* Stage header */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
+  const HeaderInner = (
+    <>
+      <div className="flex items-center gap-2">
+        {onHeaderClick ? (
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={cn(
+              "shrink-0 text-graphite transition-transform",
+              collapsed ? "" : "rotate-90",
+            )}
+          >
+            <path d="M7 5l6 5-6 5" />
+          </svg>
+        ) : null}
+        <div className="text-left">
           <p className="type-cap text-blueprint">{def.cap}</p>
           <h3 className="type-h2 mt-1.5 text-ink">{def.title}</h3>
         </div>
+      </div>
+      <div className="flex items-center gap-3">
+        {collapsed && total > 0 ? (
+          <span className="type-cap text-graphite">
+            {done}/{total}
+          </span>
+        ) : null}
         <StageDial ratio={total > 0 ? ratio : 0} index={def.index} />
       </div>
+    </>
+  );
 
-      <p className="type-prompt mt-3 text-ink2">{def.question}</p>
-      <p className="type-body-sm mt-1.5 text-graphite">{def.blurb}</p>
+  return (
+    <section
+      data-stage-card
+      id={`stage-${def.key}`}
+      className={cn(
+        "relative scroll-mt-20 rounded-xl border bg-chalk p-5 shadow-lift transition-colors",
+        stageProgress.hasGoals ? "border-rule" : "border-dashed border-ruleStrong",
+      )}
+    >
+      {/* Stage header (toggles the accordion when onHeaderClick is set) */}
+      {onHeaderClick ? (
+        <button
+          type="button"
+          onClick={onHeaderClick}
+          className="flex w-full items-start justify-between gap-3"
+        >
+          {HeaderInner}
+        </button>
+      ) : (
+        <div className="flex items-start justify-between gap-3">{HeaderInner}</div>
+      )}
 
-      {total > 0 ? (
-        <p className="type-cap mt-3 text-graphite">
-          {done} / {total} COMPLETE
-        </p>
-      ) : null}
+      {collapsed ? null : (
+        <>
+          <p className="type-prompt mt-3 text-ink2">{def.question}</p>
+          <p className="type-body-sm mt-1.5 text-graphite">{def.blurb}</p>
+
+          {total > 0 ? (
+            <p className="type-cap mt-3 text-graphite">
+              {done} / {total} COMPLETE
+            </p>
+          ) : null}
 
       {/* Vision north star */}
       {northStar ? (
@@ -151,25 +201,29 @@ export function StageSection({
 
       {error ? <p className="type-caption mt-3 text-rust">{error}</p> : null}
 
-      {/* Level blocks */}
-      <div className="mt-4 space-y-5">
-        {def.levels.map((level) => (
-          <LevelBlock
-            key={level}
-            level={level}
-            goals={goals}
-            pending={pending}
-            onToggle={(id, status) =>
-              run(() => actions.setGoalStatus({ id, status }))
-            }
-            onDelete={(id) => run(() => actions.deleteGoal({ id }))}
-            onAdd={(body, parentId) =>
-              run(() => actions.addGoal({ level, body, parent_goal_id: parentId }))
-            }
-            showLabel={def.levels.length > 1}
-          />
-        ))}
-      </div>
+          {/* Level blocks */}
+          <div className="mt-4 space-y-5">
+            {def.levels.map((level) => (
+              <LevelBlock
+                key={level}
+                level={level}
+                goals={goals}
+                pending={pending}
+                onToggle={(id, status) =>
+                  run(() => actions.setGoalStatus({ id, status }))
+                }
+                onDelete={(id) => run(() => actions.deleteGoal({ id }))}
+                onAdd={(body, parentId) =>
+                  run(() =>
+                    actions.addGoal({ level, body, parent_goal_id: parentId }),
+                  )
+                }
+                showLabel={def.levels.length > 1}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </section>
   );
 }
