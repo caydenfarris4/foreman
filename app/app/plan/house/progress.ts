@@ -254,6 +254,37 @@ export function nextMove(build: BuildState): NextMove {
   };
 }
 
+// The parent level each cascade level ladders up to (top level has none).
+export const PARENT_OF: Record<GoalLevel, GoalLevel | null> = {
+  ten_year: null,
+  five_year: "ten_year",
+  six_month: "five_year",
+  monthly: "six_month",
+  weekly: "monthly",
+  daily: "weekly",
+};
+
+/**
+ * Smart-default parent for a quick-added goal: the most recently created OPEN
+ * goal at the level above (people cascade off the thing they just planned).
+ * Null when nothing sensible exists — the gentle "doesn't connect" flag covers
+ * that case; we never guess across dropped/done work.
+ */
+export function autoParentId(
+  level: GoalLevel,
+  goals: GrowthGoal[],
+): string | null {
+  const parentLevel = PARENT_OF[level];
+  if (!parentLevel) return null;
+  const open = goals.filter(
+    (g) => g.level === parentLevel && g.status === "open",
+  );
+  if (open.length === 0) return null;
+  return open.reduce((latest, g) =>
+    g.created_at > latest.created_at ? g : latest,
+  ).id;
+}
+
 /**
  * Human label for the current construction phase, derived from overall build.
  * Used in the hero ("Framing", "Finishing", …).
