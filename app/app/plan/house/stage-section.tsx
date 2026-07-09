@@ -5,7 +5,7 @@
 // delete, all driven through the EXISTING server actions — no data-layer
 // changes. Completing a goal flows back through router.refresh(), the build
 // recomputes, and the house rises.
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { Button, Spinner } from "@/components/ui/button";
@@ -92,6 +92,7 @@ export function StageSection({
   skipRefresh = false,
   collapsed = false,
   onHeaderClick,
+  spotlight = false,
 }: {
   def: StageDef;
   goals: GrowthGoal[];
@@ -103,6 +104,11 @@ export function StageSection({
   collapsed?: boolean;
   /** When set, the header becomes a toggle button. */
   onHeaderClick?: () => void;
+  /**
+   * The user just traveled here (via "your next move"): highlight the card and
+   * open the primary level's add form so the landing needs zero hunting.
+   */
+  spotlight?: boolean;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -161,8 +167,9 @@ export function StageSection({
       data-stage-card
       id={`stage-${def.key}`}
       className={cn(
-        "relative scroll-mt-20 rounded-xl border bg-chalk p-5 shadow-lift transition-colors",
+        "relative scroll-mt-20 rounded-xl border bg-chalk p-5 shadow-lift transition-all duration-500",
         stageProgress.hasGoals ? "border-rule" : "border-dashed border-ruleStrong",
+        spotlight && "border-blueprint ring-2 ring-blueprint/40 ring-offset-2 ring-offset-paper",
       )}
     >
       {/* Stage header (toggles the accordion when onHeaderClick is set) */}
@@ -219,6 +226,7 @@ export function StageSection({
                   )
                 }
                 showLabel={def.levels.length > 1}
+                autoOpenAdd={spotlight && level === def.primaryLevel}
               />
             ))}
           </div>
@@ -265,6 +273,7 @@ function LevelBlock({
   onDelete,
   onAdd,
   showLabel,
+  autoOpenAdd = false,
 }: {
   level: GoalLevel;
   goals: GrowthGoal[];
@@ -273,6 +282,7 @@ function LevelBlock({
   onDelete: (id: string) => void;
   onAdd: (body: string, parentId: string | null) => void;
   showLabel: boolean;
+  autoOpenAdd?: boolean;
 }) {
   const meta = LEVEL_META[level];
   const items = goals.filter((g) => g.level === level && g.status !== "dropped");
@@ -355,6 +365,7 @@ function LevelBlock({
         parentNoun={parentLevel ? PARENT_NOUN[parentLevel] : null}
         pending={pending}
         onAdd={onAdd}
+        forceOpen={autoOpenAdd}
       />
     </div>
   );
@@ -412,16 +423,23 @@ function AddGoal({
   parentNoun,
   pending,
   onAdd,
+  forceOpen = false,
 }: {
   addNoun: string;
   parents: GrowthGoal[];
   parentNoun: string | null;
   pending: boolean;
   onAdd: (body: string, parentId: string | null) => void;
+  /** Landing via "your next move" opens the form so nobody hunts for "+ Add". */
+  forceOpen?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [body, setBody] = useState("");
   const [parentId, setParentId] = useState("");
+
+  useEffect(() => {
+    if (forceOpen) setOpen(true);
+  }, [forceOpen]);
 
   if (!open) {
     return (

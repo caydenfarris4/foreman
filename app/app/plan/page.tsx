@@ -74,6 +74,7 @@ export default async function PlanPage() {
         goals={goals}
         build={build}
         tenYearText={plan.ten_year_text}
+        sixMonthText={plan.six_month_milestone}
       />
 
       {/* Principle mapping (AI → user-confirmed). */}

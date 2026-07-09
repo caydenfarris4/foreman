@@ -3,6 +3,7 @@ import {
   computeBuild,
   buildPhaseLabel,
   nextMove,
+  autoParentId,
   FOUNDATION_FLOOR,
   STAGES,
 } from "@/app/app/plan/house/progress";
@@ -119,6 +120,22 @@ describe("computeBuild", () => {
       ]),
     );
     expect(allDone.kind).toBe("add");
+  });
+
+  it("auto-links a quick-added goal to the freshest open parent", () => {
+    // No parent-level goals → null (the gentle flag covers it).
+    expect(autoParentId("monthly", [])).toBe(null);
+    // Top level never links.
+    expect(autoParentId("ten_year", [goal("ten_year")])).toBe(null);
+
+    const older = { ...goal("weekly"), created_at: "2026-01-01T00:00:00Z" };
+    const newer = { ...goal("weekly"), created_at: "2026-02-01T00:00:00Z" };
+    const doneOne = {
+      ...goal("weekly", "done"),
+      created_at: "2026-03-01T00:00:00Z",
+    };
+    // Picks the most recently created OPEN parent — never done/dropped work.
+    expect(autoParentId("daily", [older, newer, doneOne])).toBe(newer.id);
   });
 
   it("reaches a fully built house when every stage is complete", () => {

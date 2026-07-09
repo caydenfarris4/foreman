@@ -9,47 +9,47 @@
 // - GSAP ScrollTrigger draws a blueprint plumb-line down the stages as you
 //   scroll and gives the hero a gentle parallax — the scroll-driven sequence.
 // - Each stage owns its goal levels and writes through the existing actions.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
+  AnimatePresence,
   animate,
+  motion,
   useMotionValue,
   useReducedMotion,
 } from "motion/react";
 import { Reveal } from "@/lib/motion";
-import { Button } from "@/components/ui/button";
+import { Button, Spinner } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import type { GoalLevel, GrowthGoal } from "@/lib/database.types";
+import { addGoal } from "../actions";
 import { HouseScene } from "./house-scene";
 import { StageSection, type StageActions } from "./stage-section";
 import {
+  PARENT_OF,
   STAGES,
+  autoParentId,
   buildPhaseLabel,
   computeBuild,
   nextMove,
   type BuildState,
+  type NextMove,
   type StageKey,
 } from "./progress";
-
-// Top level has no parent; everything else ladders up one level. Used only to
-// flag demo goals as connected/disconnected (mirrors the server action).
-const PARENT_LEVEL: Record<GoalLevel, GoalLevel | null> = {
-  ten_year: null,
-  five_year: "ten_year",
-  six_month: "five_year",
-  monthly: "six_month",
-  weekly: "monthly",
-  daily: "weekly",
-};
 
 export function PlanJourney({
   goals,
   build,
   tenYearText,
+  sixMonthText = null,
   demo = false,
 }: {
   goals: GrowthGoal[];
   build: BuildState;
   tenYearText: string | null;
+  /** The plan's six-month milestone — anchors the first monthly quick-add. */
+  sixMonthText?: string | null;
   // Dev-only: drive add/complete/delete through local state (no Supabase) so
   // the journey is fully interactive in the /preview route. Production passes
   // the real server-backed goals and leaves this false.
@@ -89,7 +89,7 @@ export function PlanJourney({
             status: "open",
             period_start: null,
             period_end: null,
-            ladders_up: PARENT_LEVEL[level] === null || !!parent_goal_id,
+            ladders_up: PARENT_OF[level] === null || !!parent_goal_id,
             created_at: new Date().toISOString(),
             updated_at: null,
           },
@@ -135,8 +135,23 @@ export function PlanJourney({
       return next;
     });
   }
+
+  // When the user travels to a stage, the destination must RECEIVE them:
+  // expand it, scroll to it, spotlight it, and open its add form with the
+  // cursor ready — no hunting for a small "+ Add" link after landing.
+  const [spotlightKey, setSpotlightKey] = useState<StageKey | null>(null);
+  const spotlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (spotlightTimer.current) clearTimeout(spotlightTimer.current);
+    },
+    [],
+  );
   function goToNextMove() {
     setExpanded((prev) => new Set(prev).add(move.stageKey));
+    setSpotlightKey(move.stageKey);
+    if (spotlightTimer.current) clearTimeout(spotlightTimer.current);
+    spotlightTimer.current = setTimeout(() => setSpotlightKey(null), 2600);
     requestAnimationFrame(() => {
       document
         .getElementById(`stage-${move.stageKey}`)
@@ -252,24 +267,26 @@ export function PlanJourney({
         </div>
 
         {/* The one clear next move — the most important element after the
-            house itself, so it comes before every secondary destination. */}
+            house itself. For "add" moves the input lives RIGHT HERE in the
+            card: type the goal, hit add, the house rises, and the card morphs
+            to the next step. No traveling, no hunting. */}
         <Reveal as="panelRise" className="mt-2.5">
-          <div className="rounded-xl border border-blueprint/25 surface-blueprint p-5 shadow-lift">
-            <p className="type-cap text-blueprint">YOUR NEXT MOVE</p>
-            <h2 className="type-h2 mt-1.5 text-ink">{move.title}</h2>
-            <p className="type-body-sm mt-1.5 text-ink2">{move.instruction}</p>
-            <div className="mt-4">
-              {move.kind === "complete" ? (
-                <Button asChild size="md">
-                  <Link href="/app/plan/checkin">{move.cta} →</Link>
-                </Button>
-              ) : (
-                <Button size="md" onClick={goToNextMove}>
-                  {move.cta} →
-                </Button>
-              )}
-            </div>
-          </div>
+          <QuickAddCard
+            move={move}
+            goals={effectiveGoals}
+            sixMonthText={sixMonthText}
+            onAdd={async (body) => {
+              const parent = autoParentId(move.level, effectiveGoals);
+              const add = demo ? demoActions.addGoal : addGoal;
+              return add({
+                level: move.level,
+                body,
+                parent_goal_id: parent,
+              });
+            }}
+            demo={demo}
+            onBrowse={goToNextMove}
+          />
         </Reveal>
 
         <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -333,11 +350,142 @@ export function PlanJourney({
                 skipRefresh={demo}
                 collapsed={!expanded.has(sp.def.key)}
                 onHeaderClick={() => toggleStage(sp.def.key)}
+                spotlight={spotlightKey === sp.def.key}
               />
             </Reveal>
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+// The next-move card with the action built in. For "add" moves the goal input
+// lives inside the card (Fogg: make the behavior trivially easy — act where
+// the intent is). Submitting auto-links the goal to the freshest open parent
+// (smart default), the data refreshes, the house rises, and the card morphs to
+// the following move — so a brand-new user can build their whole first cascade
+// from this one card. "Complete" moves link to the cascade check-in.
+function QuickAddCard({
+  move,
+  goals,
+  sixMonthText,
+  onAdd,
+  onBrowse,
+  demo,
+}: {
+  move: NextMove;
+  goals: GrowthGoal[];
+  sixMonthText: string | null;
+  onAdd: (body: string) => Promise<{ ok: boolean; error?: string }>;
+  onBrowse: () => void;
+  demo: boolean;
+}) {
+  const router = useRouter();
+  const [body, setBody] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+
+  const noun =
+    STAGES.find((s) => s.key === move.stageKey)?.itemNoun ?? "goal";
+
+  // What this goal ladders up to — shown so the user writes in context.
+  // Monthly anchors to the plan's six-month milestone when no goal rows exist
+  // above it yet.
+  const parentId = autoParentId(move.level, goals);
+  const parentBody = parentId
+    ? goals.find((g) => g.id === parentId)?.body ?? null
+    : move.level === "monthly"
+      ? sixMonthText
+      : null;
+
+  function submit() {
+    const text = body.trim();
+    if (text.length < 3) return;
+    setError(null);
+    start(async () => {
+      const res = await onAdd(text);
+      if (!res.ok) {
+        setError(res.error ?? "Could not add it. Try again.");
+        return;
+      }
+      setBody("");
+      if (!demo) router.refresh();
+    });
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-blueprint/25 surface-blueprint p-5 shadow-lift">
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={move.title}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.25, ease: [0.22, 0.61, 0.36, 1] }}
+        >
+          <p className="type-cap text-blueprint">YOUR NEXT MOVE</p>
+          <h2 className="type-h2 mt-1.5 text-ink">{move.title}</h2>
+          <p className="type-body-sm mt-1.5 text-ink2">{move.instruction}</p>
+
+          {move.kind === "add" ? (
+            <div className="mt-4">
+              {parentBody ? (
+                <p className="type-caption mb-2 text-graphite">
+                  <span className="type-cap text-blueprint/70">BUILDS ON · </span>
+                  {parentBody.length > 90
+                    ? `${parentBody.slice(0, 90)}…`
+                    : parentBody}
+                </p>
+              ) : null}
+              <Textarea
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                rows={2}
+                placeholder={`Write the ${noun}…`}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    submit();
+                  }
+                }}
+                className="bg-chalk"
+              />
+              {error ? (
+                <p className="type-caption mt-2 text-rust">{error}</p>
+              ) : null}
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <Button
+                  size="md"
+                  onClick={submit}
+                  disabled={pending || body.trim().length < 3}
+                >
+                  {pending ? (
+                    <>
+                      <Spinner /> Placing…
+                    </>
+                  ) : (
+                    `${move.cta} →`
+                  )}
+                </Button>
+                <button
+                  type="button"
+                  onClick={onBrowse}
+                  className="type-label text-graphite transition-colors hover:text-ink"
+                >
+                  Open the stage instead
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4">
+              <Button asChild size="md">
+                <Link href="/app/plan/checkin">{move.cta} →</Link>
+              </Button>
+            </div>
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

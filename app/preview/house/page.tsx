@@ -141,6 +141,7 @@ export default function HousePreviewPage() {
                 goals={seed}
                 build={computeBuild(seed, { hasPlan: true })}
                 tenYearText={TEN_YEAR}
+                sixMonthText="Ship the team operating rhythm and run it for a full quarter."
               />
             )}
           </div>
