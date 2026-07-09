@@ -4,20 +4,21 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-sans font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper disabled:cursor-not-allowed disabled:bg-shell disabled:text-haze disabled:border-shell",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-sans font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blueprint focus-visible:ring-offset-2 focus-visible:ring-offset-paper disabled:cursor-not-allowed disabled:bg-shell disabled:text-haze disabled:border-shell",
   {
     variants: {
       variant: {
         primary:
-          "bg-ink text-chalk border border-ink hover:bg-[#2A2620] hover:border-[#2A2620] active:bg-[#0E0C0A]",
+          "bg-ink text-[oklch(0.97_0.01_80)] border border-ink hover:bg-[oklch(0.26_0.02_55)] hover:border-[oklch(0.26_0.02_55)] active:bg-[oklch(0.22_0.02_55)]",
         secondary:
           "bg-chalk text-ink border border-ruleStrong hover:bg-paper2 active:bg-shell",
         ghost:
           "bg-transparent text-ink2 border border-transparent hover:bg-ruleSoft hover:text-ink active:bg-rule",
         danger:
-          "bg-rust text-white border border-rust hover:bg-[#8E3622] hover:border-[#8E3622] active:bg-[#74291A]",
+          "bg-rust text-white border border-rust hover:bg-[oklch(0.48_0.13_30)] hover:border-[oklch(0.48_0.13_30)] active:bg-[oklch(0.42_0.13_30)]",
+        // Clay — the Cornerstone action accent.
         oak:
-          "bg-oak text-ink border border-oak hover:bg-oak-dim hover:border-oak-dim",
+          "bg-blueprint text-[oklch(0.98_0.01_80)] border border-blueprint hover:bg-blueprint-dim hover:border-blueprint-dim",
       },
       size: {
         sm: "h-8 px-3 text-[13px]",

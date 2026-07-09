@@ -1,8 +1,10 @@
 import type { Config } from "tailwindcss";
 
-// Design tokens straight from design/src/tokens.jsx.
-// "Warm paper, blueprint blue, oak accent, matte black ink. Restrained
-// construction references."
+// Cornerstone design system (from design upload 7c42ba34).
+// "Warm cream, clay accent, sage growth, amber glow, warm brown ink."
+// Token NAMES are kept from the previous system so every existing usage
+// re-skins in place; only the values changed. `blueprint` now means CLAY —
+// the schematic-blue era is over.
 const config: Config = {
   darkMode: ["class"],
   content: [
@@ -14,61 +16,73 @@ const config: Config = {
     container: { center: true, padding: "1.5rem", screens: { "2xl": "1280px" } },
     extend: {
       colors: {
-        // Surfaces
-        paper: "#F5F1EA",
-        paper2: "#ECE6DA",
-        chalk: "#FAF7F2",
-        shell: "#E6DFD0",
-        // Ink
-        ink: "#1A1816",
-        ink2: "#3A342C",
-        graphite: "#6B6358",
-        haze: "#9A9387",
-        // Lines
-        rule: "rgba(26,24,22,0.10)",
-        ruleSoft: "rgba(26,24,22,0.06)",
-        ruleStrong: "rgba(26,24,22,0.18)",
-        // Brand
-        blueprint: { DEFAULT: "#1E3A5F", dim: "#2C5478", wash: "#E4ECF4" },
-        oak: { DEFAULT: "#B8843F", dim: "#8E6529", wash: "#F5EBDA" },
+        // Surfaces (warm cream family)
+        paper: "oklch(0.99 0.006 80)",
+        paper2: "oklch(0.965 0.006 75)",
+        chalk: "oklch(0.995 0.004 85)",
+        shell: "oklch(0.90 0.01 72)",
+        // Ink (warm brown, never black)
+        ink: "oklch(0.30 0.02 55)",
+        ink2: "oklch(0.38 0.03 55)",
+        graphite: "oklch(0.52 0.02 55)",
+        haze: "oklch(0.62 0.02 60)",
+        // Lines (warm translucent hairlines)
+        rule: "oklch(0.35 0.03 55 / 0.10)",
+        ruleSoft: "oklch(0.35 0.03 55 / 0.05)",
+        ruleStrong: "oklch(0.35 0.03 55 / 0.22)",
+        // Brand — blueprint token now carries CLAY (action & focus)
+        blueprint: {
+          DEFAULT: "oklch(0.60 0.11 40)",
+          dim: "oklch(0.52 0.12 40)",
+          wash: "oklch(0.97 0.012 50)",
+        },
+        // oak = clay-bright (links, highlights)
+        oak: {
+          DEFAULT: "oklch(0.66 0.11 42)",
+          dim: "oklch(0.55 0.10 42)",
+          wash: "oklch(0.96 0.02 55)",
+        },
         // Status
-        rust: { DEFAULT: "#A8442A", wash: "#F4E0D9" },
-        moss: { DEFAULT: "#4A6B3A", wash: "#E1E9D8" },
-        amber: { DEFAULT: "#9C7416", wash: "#F1E5C9" },
-        // Phase aliases — same hexes as brand/status, surfaced under their
-        // semantic names so phase components don't have to translate.
-        foundation: "#1E3A5F",
-        framing: "#B8843F",
-        finishing: "#4A6B3A",
+        rust: { DEFAULT: "oklch(0.55 0.13 30)", wash: "oklch(0.95 0.03 30)" },
+        moss: { DEFAULT: "oklch(0.60 0.045 150)", wash: "oklch(0.98 0.01 150)" },
+        amber: { DEFAULT: "oklch(0.72 0.11 70)", wash: "oklch(0.95 0.05 80)" },
+        // Phase aliases
+        foundation: "oklch(0.40 0.05 45)",
+        framing: "oklch(0.60 0.11 40)",
+        finishing: "oklch(0.60 0.045 150)",
       },
       borderRadius: {
-        sm: "4px",
-        md: "8px",
-        lg: "12px",
-        xl: "16px",
-        "2xl": "20px",
+        sm: "8px",
+        md: "12px",
+        lg: "16px",
+        xl: "20px",
+        "2xl": "26px",
       },
       fontFamily: {
-        serif: ["var(--font-serif)", "Source Serif Pro", "Georgia", "serif"],
+        serif: ["var(--font-serif)", "Newsreader", "Georgia", "serif"],
         sans: [
           "var(--font-sans)",
+          "Hanken Grotesk",
           "-apple-system",
           "system-ui",
           "sans-serif",
         ],
-        mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+        // No mono in Cornerstone; alias to the sans so stray font-mono
+        // usages inherit the system instead of a terminal look.
+        mono: ["var(--font-sans)", "Hanken Grotesk", "system-ui", "sans-serif"],
       },
       letterSpacing: {
-        cap: "0.06em",
+        cap: "0.12em",
       },
       backgroundImage: {
-        // Faint schematic grid — the texture of graph paper / a drafting table.
-        // Layered behind blueprint surfaces at low opacity.
+        // Soft warm panel gradients (the grid-paper era is over).
         "blueprint-grid":
-          "linear-gradient(rgba(30,58,95,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(30,58,95,0.07) 1px, transparent 1px)",
-        // Warm version for paper surfaces.
+          "linear-gradient(160deg, oklch(0.97 0.012 50), oklch(0.955 0.014 55))",
         "draft-grid":
-          "linear-gradient(rgba(26,24,22,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(26,24,22,0.05) 1px, transparent 1px)",
+          "linear-gradient(160deg, oklch(0.985 0.008 78), oklch(0.965 0.008 74))",
+        // Dark ink gradient for prompt cards (Cornerstone signature).
+        "ink-card":
+          "linear-gradient(160deg, oklch(0.30 0.02 55), oklch(0.26 0.02 55))",
       },
       backgroundSize: {
         grid: "22px 22px",

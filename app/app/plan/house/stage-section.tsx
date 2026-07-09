@@ -249,7 +249,7 @@ function StageDial({ ratio, index }: { ratio: number; index: number }) {
           cy="20"
           r={r}
           fill="none"
-          stroke="#4A6B3A"
+          stroke="#5f7d69"
           strokeWidth="3"
           strokeLinecap="round"
           strokeDasharray={c}

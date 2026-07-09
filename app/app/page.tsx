@@ -209,7 +209,9 @@ export default async function DashboardPage({
     .toUpperCase();
 
   const checkinDone = !!todayCheckin?.completed_at;
-  const promptText = todayCheckin?.prompt_text ?? todaysPrompt;
+  // Today's prompt now lives on the check-in page itself; the hero card stays
+  // visual (photo + one line), per the Cornerstone home screen.
+  void todaysPrompt;
 
   return (
     <div className="space-y-4 px-1 pt-4">
@@ -272,26 +274,37 @@ export default async function DashboardPage({
           </div>
         </Card>
       ) : (
-        <div className="mx-3 overflow-hidden rounded-lg bg-ink p-5 text-chalk">
-          <div className="mb-3 flex items-center justify-between">
-            <span className="type-cap text-chalk/55">TODAY · CHECK-IN</span>
-            <span className="type-cap text-oak">
-              {checkinDone ? "FILED" : "NOT YET"}
+        /* Morning check-in hero — the Cornerstone house photo card. */
+        <Link
+          href="/app/checkin"
+          className="group relative mx-3 block overflow-hidden rounded-xl shadow-lift"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/house-hero.png"
+            alt=""
+            className="h-52 w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[oklch(0.22_0.02_55/0.82)] via-[oklch(0.25_0.02_55/0.28)] to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
+            <div>
+              <p className="type-cap text-[#e6b25a]">
+                TODAY&apos;S FOCUS{checkinDone ? " · FILED" : ""}
+              </p>
+              <p className="type-h2 mt-1 text-[oklch(0.98_0.01_80)]">
+                Morning check-in
+              </p>
+              <p className="type-caption mt-0.5 text-[oklch(0.98_0.01_80/0.7)]">
+                {checkinDone
+                  ? "Done — your coaching is inside."
+                  : "2 min · under construction, every day"}
+              </p>
+            </div>
+            <span className="mb-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[oklch(0.98_0.01_80)] text-ink transition-transform group-hover:translate-x-0.5">
+              <ArrowIcon size={16} />
             </span>
           </div>
-          <p className="type-prompt mb-5 text-chalk">{promptText}</p>
-          <div className="flex items-center justify-between gap-3">
-            <span className="type-caption text-chalk/55">
-              {checkinDone ? "Your coaching is below." : "Under 5 minutes."}
-            </span>
-            <Button asChild size="md" variant="oak">
-              <Link href="/app/checkin">
-                {checkinDone ? "Open" : "Start"}
-                <ArrowIcon />
-              </Link>
-            </Button>
-          </div>
-        </div>
+        </Link>
       )}
 
       {isRetroDay && !retroDone ? (
@@ -418,10 +431,10 @@ export default async function DashboardPage({
                     style={{
                       backgroundColor:
                         p === "foundation"
-                          ? "#1E3A5F"
+                          ? "#b26a45"
                           : p === "framing"
-                            ? "#B8843F"
-                            : "#4A6B3A",
+                            ? "#b26a45"
+                            : "#5f7d69",
                     }}
                   />
                   <p className="type-h2 text-[22px] leading-none text-ink">

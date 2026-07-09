@@ -32,7 +32,7 @@ function ForemanBadge() {
         aria-hidden
       >
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-          <path d="M1 1h6v2H3v6H1V1z" fill="#1A1816" />
+          <path d="M1 1h6v2H3v6H1V1z" fill="#3a352e" />
         </svg>
       </span>
       <span className="type-cap text-oak">FOREMAN</span>

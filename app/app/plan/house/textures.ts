@@ -55,7 +55,7 @@ export function woodColor(quality: number) {
     `wood-c-${size}`,
     size,
     (ctx, s) => {
-      fill(ctx, s, "#8E6529");
+      fill(ctx, s, "#8a6a52");
       const r = rng(7);
       for (let i = 0; i < s * 0.9; i++) {
         const y = r() * s;
@@ -150,7 +150,7 @@ function drawSiding(
 ) {
   const boards = 10;
   const bh = s / boards;
-  fill(ctx, s, mode === "color" ? "#ECE6DA" : "#b4b4b4");
+  fill(ctx, s, mode === "color" ? "#f7f3ec" : "#b4b4b4");
   for (let i = 0; i <= boards; i++) {
     const y = i * bh;
     if (mode === "color") {
