@@ -43,15 +43,21 @@ async function waitForServer(url, timeoutMs) {
 
 async function main() {
   mkdirSync(OUT, { recursive: true });
-  const server = spawn("npx", ["next", "dev", "-p", PORT], {
+  // SERVER=start serves the prebuilt production bundle — far lighter than dev
+  // (no on-demand compile), which matters in constrained sandboxes.
+  const mode = process.env.SERVER === "start" ? "start" : "dev";
+  const server = spawn("npx", ["next", mode, "-p", PORT], {
     cwd: process.cwd(),
-    env: { ...process.env, NODE_ENV: "development" },
+    env:
+      mode === "start"
+        ? { ...process.env }
+        : { ...process.env, NODE_ENV: "development" },
     stdio: ["ignore", "inherit", "inherit"],
   });
 
   let browser;
   try {
-    const warm = `${BASE}/preview/house?house3d=on&tier=standard`;
+    const warm = `${BASE}/preview/house?house3d=off`;
     await waitForServer(warm, 150_000);
     await fetch(warm).catch(() => {});
     await sleep(4000); // let the 3D chunk compile once
