@@ -13,6 +13,7 @@ import { recordedKnowledgeBlock } from "@/lib/journal-context";
 import type { JournalEntry } from "@/lib/database.types";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { accessFor, canUseAi } from "@/lib/billing";
+import { hasActiveCohortAccess } from "@/lib/cohorts";
 import type { TrajectoryRead } from "@/lib/inspection/scoring";
 
 export const runtime = "nodejs";
@@ -65,10 +66,14 @@ export async function POST(request: NextRequest) {
   // Mirror the UI paywall on the server. A churned/expired user can't
   // bypass it by POSTing directly — Claude calls cost money.
   if (!canUseAi(accessFor(profile))) {
-    return NextResponse.json(
-      { error: "Subscription required" },
-      { status: 402 },
-    );
+    // Cohort participants keep AI access through their free window.
+    const cohortBypass = await hasActiveCohortAccess(supabase, user.id);
+    if (!cohortBypass) {
+      return NextResponse.json(
+        { error: "Subscription required" },
+        { status: 402 },
+      );
+    }
   }
 
   // Don't re-coach a completed check-in.
@@ -119,7 +124,47 @@ export async function POST(request: NextRequest) {
     >[],
   );
 
-  const systemPrompt = [buildSystemPrompt(profile), contextLine, knowledgeBlock]
+  // Cohort context: when the user is in an in-progress cohort, ground the
+  // coaching in the most recent session's focus and tag the check-in
+  // (brief: integration #2). Failure-safe — empty when not enrolled or the
+  // cohort tables aren't migrated yet.
+  let cohortLine = "";
+  let cohortTag: string | null = null;
+  const { data: cohortRows } = await supabase
+    .from("cohort_participants")
+    .select("cohort_id, status, cohorts!inner(status, name)")
+    .eq("user_id", user.id)
+    .in("status", ["enrolled", "paid"]);
+  const activeCp = ((cohortRows ?? []) as unknown as {
+    cohort_id: string;
+    cohorts: { status: string; name: string };
+  }[]).find((r) => r.cohorts?.status === "in_progress");
+  if (activeCp) {
+    const { data: sess } = await supabase
+      .from("cohort_sessions")
+      .select("session_number, title, framework_phase")
+      .eq("cohort_id", activeCp.cohort_id)
+      .lte("scheduled_at", new Date().toISOString())
+      .order("session_number", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const s = sess as {
+      session_number: number;
+      title: string;
+      framework_phase: string | null;
+    } | null;
+    if (s) {
+      cohortLine = `COHORT CONTEXT: This user is in the "${activeCp.cohorts.name}" cohort. Their most recent session was ${s.session_number} of 8: "${s.title}"${s.framework_phase ? ` (${s.framework_phase})` : ""}. When today's situation touches that session's ground, connect the coaching to it.`;
+      cohortTag = `cohort_session_${s.session_number}`;
+    }
+  }
+
+  const systemPrompt = [
+    buildSystemPrompt(profile),
+    contextLine,
+    knowledgeBlock,
+    cohortLine,
+  ]
     .filter(Boolean)
     .join("\n\n");
 
@@ -150,6 +195,7 @@ export async function POST(request: NextRequest) {
       coachingText = parsedJson.coaching.trim();
       phase = parsedJson.phase;
       tags = parsedJson.tags.slice(0, 8);
+      if (cohortTag) tags = [...tags.slice(0, 7), cohortTag];
       title = parsedJson.title.trim().slice(0, 120);
     } else {
       coachingText = text.trim() || COACHING_FALLBACK;

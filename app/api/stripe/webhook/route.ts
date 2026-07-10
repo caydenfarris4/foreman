@@ -2,6 +2,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import type Stripe from "stripe";
 import { getStripe, isActiveSubscriptionStatus } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getFromAddress, getResend } from "@/lib/resend";
+import {
+  cohortWelcomeHtml,
+  cohortWelcomeSubject,
+} from "@/lib/emails/cohort";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -31,10 +36,36 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient();
 
+  // Idempotency: Stripe can deliver the same event_id more than once.
+  // Insert into stripe_webhook_events first; if it collides, no-op.
+  const { error: idemError } = await admin
+    .from("stripe_webhook_events")
+    .insert({
+      event_id: event.id,
+      event_type: event.type,
+    });
+  if (idemError && idemError.code === "23505") {
+    // Already processed — return 200 so Stripe stops retrying.
+    return NextResponse.json({ received: true, duplicate: true });
+  }
+  if (idemError) {
+    console.error("Idempotency insert failed", idemError.message);
+    // Fall through — better to risk a double-handle than fail the webhook.
+  }
+
   try {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
+        const type = (session.metadata?.type as string | undefined) ?? "";
+
+        // ---------- Cohort one-time purchase ---------------------------
+        if (type === "cohort") {
+          await handleCohortCheckout(admin, session);
+          break;
+        }
+
+        // ---------- Subscription (existing flow) ------------------------
         const userId =
           (session.metadata?.user_id as string | undefined) ??
           (session.client_reference_id as string | undefined);
@@ -147,4 +178,98 @@ async function findUserIdByCustomer(
     .eq("stripe_customer_id", customerId)
     .maybeSingle();
   return (data as { id: string } | null)?.id ?? null;
+}
+
+// Cohort one-time purchase: mark the participant paid, capture
+// payment metadata, and set their free-app-access window.
+async function handleCohortCheckout(
+  admin: ReturnType<typeof createAdminClient>,
+  session: Stripe.Checkout.Session,
+) {
+  const participantId = session.metadata?.participant_id as string | undefined;
+  const cohortId = session.metadata?.cohort_id as string | undefined;
+  if (!participantId || !cohortId) {
+    console.error(
+      "Cohort checkout missing metadata",
+      session.id,
+      session.metadata,
+    );
+    return;
+  }
+
+  // Compute free_app_access_until = cohort.end_date + 4 weeks.
+  const { data: cohortRow } = await admin
+    .from("cohorts")
+    .select("name, start_date, end_date")
+    .eq("id", cohortId)
+    .maybeSingle();
+  const cohortInfo = cohortRow as {
+    name: string;
+    start_date: string;
+    end_date: string;
+  } | null;
+  let freeUntil: string | null = null;
+  if (cohortInfo) {
+    const end = new Date(`${cohortInfo.end_date}T00:00:00Z`);
+    end.setUTCDate(end.getUTCDate() + 28);
+    freeUntil = end.toISOString();
+  }
+
+  const paymentIntentId =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id ?? null;
+  const amountPaid =
+    session.amount_total ?? session.amount_subtotal ?? null;
+
+  const { data: paidRow, error } = await admin
+    .from("cohort_participants")
+    .update({
+      status: "paid",
+      stripe_payment_intent_id: paymentIntentId,
+      amount_paid_cents: amountPaid,
+      free_app_access_until: freeUntil,
+    })
+    .eq("id", participantId)
+    .select("user_id")
+    .single();
+  if (error || !paidRow) {
+    console.error("Cohort participant paid-update failed", error?.message);
+    return;
+  }
+
+  // Welcome packet — fire and forget.
+  if (cohortInfo) {
+    try {
+      const { data: profRow } = await admin
+        .from("profiles")
+        .select("name, email")
+        .eq("id", (paidRow as { user_id: string }).user_id)
+        .maybeSingle();
+      const prof = profRow as { name: string | null; email: string } | null;
+      if (prof?.email) {
+        const startLabel = new Date(
+          `${cohortInfo.start_date}T12:00:00Z`,
+        ).toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          timeZone: "UTC",
+        });
+        const resend = getResend();
+        await resend.emails.send({
+          from: getFromAddress(),
+          to: prof.email,
+          subject: cohortWelcomeSubject(cohortInfo.name),
+          html: cohortWelcomeHtml({
+            name: prof.name,
+            cohortName: cohortInfo.name,
+            startDateLabel: startLabel,
+          }),
+        });
+      }
+    } catch (err) {
+      console.error("Cohort welcome email failed", err);
+    }
+  }
 }

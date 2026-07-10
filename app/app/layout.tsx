@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { accessFor, isPaywalled } from "@/lib/billing";
+import { hasActiveCohortAccess } from "@/lib/cohorts";
 import type { Profile } from "@/lib/database.types";
 import { MotionProvider } from "@/lib/motion";
 import { AppShell } from "./shell";
@@ -50,7 +51,10 @@ export default async function AppLayout({
   const pathname = (await headers()).get("x-pathname") ?? "";
   const onBypassRoute = PAYWALL_BYPASS.some((p) => pathname.startsWith(p));
   if (isPaywalled(access) && !onBypassRoute) {
-    redirect("/app/upgrade");
+    // Cohort participants get free app access through cohort.end_date
+    // + 4 weeks. Honor that before redirecting to the paywall.
+    const cohortBypass = await hasActiveCohortAccess(supabase, user.id);
+    if (!cohortBypass) redirect("/app/upgrade");
   }
 
   const initials = (profile.name ?? user.email ?? "")

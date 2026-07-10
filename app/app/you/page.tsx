@@ -14,6 +14,7 @@ async function signOut() {
 }
 
 const ROWS: { href: string; label: string; sub: string }[] = [
+  { href: "/app/cohort", label: "Cohort", sub: "The 8-week program — your group, sessions, and schedule" },
   { href: "/app/retro", label: "Weekly retro", sub: "Wins, struggles, lessons" },
   { href: "/app/retro/history", label: "Retro history", sub: "Past site reports" },
   { href: "/app/library", label: "Library", sub: "Every coaching session, searchable" },
@@ -31,12 +32,12 @@ export default async function YouPage() {
 
   const { data: profileRow } = await supabase
     .from("profiles")
-    .select("name, email, created_at")
+    .select("name, email, created_at, is_admin")
     .eq("id", user.id)
     .maybeSingle();
   const profile = profileRow as Pick<
     Profile,
-    "name" | "email" | "created_at"
+    "name" | "email" | "created_at" | "is_admin"
   > | null;
 
   const name = profile?.name ?? "";
@@ -71,7 +72,17 @@ export default async function YouPage() {
       </header>
 
       <section className="overflow-hidden rounded-lg border border-rule bg-chalk">
-        {ROWS.map((r, i) => (
+        {(profile?.is_admin
+          ? [
+              {
+                href: "/admin",
+                label: "Admin",
+                sub: "Cohorts, applications, mentors, review queue",
+              },
+              ...ROWS,
+            ]
+          : ROWS
+        ).map((r, i) => (
           <Link
             key={r.href}
             href={r.href}
