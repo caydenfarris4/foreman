@@ -15,10 +15,19 @@ import {
   type LayerReads,
 } from "@/lib/inspection/scoring";
 import { routeInspection } from "@/lib/inspection/router";
+import {
+  buildGrowthEvidence,
+  daysUntilInspection,
+  INSPECTION_INTERVAL_DAYS,
+  isInspectionDue,
+} from "@/lib/inspection/evidence";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { accessFor, canUseAi } from "@/lib/billing";
 import { principleByKey } from "@/lib/inspection/principles";
+import { getFromAddress, getResend } from "@/lib/resend";
+import { reportReadyHtml, reportReadySubject } from "@/lib/emails/inspection";
 import type {
+  JournalKind,
   PrincipleKey,
   PrincipleSelection,
   Profile,
@@ -80,12 +89,12 @@ export async function POST(request: NextRequest) {
 
   const { data: profileRow } = await supabase
     .from("profiles")
-    .select("name, role_title, subscription_status, trial_ends_at")
+    .select("name, email, role_title, subscription_status, trial_ends_at")
     .eq("id", user.id)
     .single();
   const profile = profileRow as Pick<
     Profile,
-    "name" | "role_title" | "subscription_status" | "trial_ends_at"
+    "name" | "email" | "role_title" | "subscription_status" | "trial_ends_at"
   > | null;
   if (!profile) {
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });
@@ -126,26 +135,145 @@ export async function POST(request: NextRequest) {
   const admin = createAdminClient();
   const { data: priorRows } = await admin
     .from("inspections")
-    .select("cycle_number, layer_reads, sent_at")
+    .select("cycle_number, layer_reads, sent_at, status, flag_status")
     .eq("user_id", user.id)
     .order("cycle_number", { ascending: false })
     .limit(1);
   const priorRow = (priorRows ?? [])[0] as
-    | { cycle_number: number; layer_reads: unknown; sent_at: string | null }
+    | {
+        cycle_number: number;
+        layer_reads: unknown;
+        sent_at: string | null;
+        status: string;
+        flag_status: string;
+      }
     | undefined;
+
+  // Firm six-month cycle: a walk-through in review blocks a new one, and a
+  // sent report locks the site until the next inspection is due.
+  if (priorRow && priorRow.status !== "sent" && priorRow.flag_status === "routed") {
+    return NextResponse.json(
+      { error: "Your walk-through is already in review. The report lands here once it clears." },
+      { status: 409 },
+    );
+  }
+  if (priorRow?.sent_at && !isInspectionDue(priorRow.sent_at)) {
+    const days = daysUntilInspection(priorRow.sent_at);
+    return NextResponse.json(
+      {
+        error: `Inspections run on a six-month cycle. Your next walk-through unlocks in ${days} day${days === 1 ? "" : "s"}. Until then, the daily and weekly work is the build.`,
+      },
+      { status: 409 },
+    );
+  }
+
   const cycleNumber = priorRow ? priorRow.cycle_number + 1 : 1;
   const priorSent = priorRow?.sent_at ? (priorRow.layer_reads as LayerReads) : null;
   const isBaseline = cycleNumber === 1 || !priorSent;
 
-  // Behavioral anchor: cascade completion history.
-  const { data: completionRows } = await supabase
-    .from("cascade_checkin_goals")
-    .select("completed")
-    .eq("user_id", user.id)
-    .limit(5000);
+  // Growth window: since the last sent report, or the trailing six months for
+  // a baseline. Everything the report may point to comes from this record.
+  const windowStartISO =
+    priorRow?.sent_at ??
+    new Date(Date.now() - INSPECTION_INTERVAL_DAYS * 86400_000).toISOString();
+  const windowStartDate = windowStartISO.slice(0, 10);
+
+  const [
+    { data: completionRows },
+    { count: checkinCount },
+    { data: situationRows },
+    { data: retroRows },
+    { data: doneGoalRows },
+    { data: journalRows },
+    { count: habitCheckCount },
+  ] = await Promise.all([
+    // Behavioral anchor: cascade completion history (all-time, for scoring).
+    supabase
+      .from("cascade_checkin_goals")
+      .select("completed")
+      .eq("user_id", user.id)
+      .limit(5000),
+    supabase
+      .from("daily_checkins")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .not("completed_at", "is", null)
+      .gte("checkin_date", windowStartDate),
+    supabase
+      .from("situations")
+      .select("title")
+      .eq("user_id", user.id)
+      .gte("created_at", windowStartISO)
+      .order("created_at", { ascending: false })
+      .limit(4),
+    supabase
+      .from("weekly_retros")
+      .select("framework_focus, skipped")
+      .eq("user_id", user.id)
+      .gte("week_start", windowStartDate)
+      .order("week_start", { ascending: false })
+      .limit(60),
+    supabase
+      .from("growth_goals")
+      .select("level")
+      .eq("user_id", user.id)
+      .eq("status", "done")
+      .gte("updated_at", windowStartISO)
+      .limit(2000),
+    supabase
+      .from("journal_entries")
+      .select("kind, body, source")
+      .eq("user_id", user.id)
+      .gte("created_at", windowStartISO)
+      .order("created_at", { ascending: false })
+      .limit(500),
+    supabase
+      .from("habit_checks")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("check_date", windowStartDate),
+  ]);
   const completionRate = completionRateFrom(
     (completionRows ?? []) as { completed: boolean }[],
   );
+
+  const retros = (retroRows ?? []) as {
+    framework_focus: string | null;
+    skipped: boolean;
+  }[];
+  const filedRetros = retros.filter((r) => !r.skipped);
+  const doneByLevel = ((doneGoalRows ?? []) as { level: string }[]).reduce(
+    (acc, g) => {
+      acc[g.level] = (acc[g.level] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
+  const journal = (journalRows ?? []) as {
+    kind: JournalKind;
+    body: string;
+    source: string | null;
+  }[];
+  const evidence = buildGrowthEvidence({
+    windowStartISO,
+    checkinCount: checkinCount ?? 0,
+    situationTitles: ((situationRows ?? []) as { title: string }[]).map(
+      (s) => s.title,
+    ),
+    retroCount: filedRetros.length,
+    latestRetroFocus:
+      filedRetros.find((r) => r.framework_focus)?.framework_focus ?? null,
+    boardsCompleted: doneByLevel.daily ?? 0,
+    weeklyGoalsCompleted: doneByLevel.weekly ?? 0,
+    monthlyGoalsCompleted: doneByLevel.monthly ?? 0,
+    journalReflections: journal.filter((j) => j.kind === "reflection").length,
+    journalQuotes: journal
+      .filter((j) => j.kind === "quote")
+      .slice(0, 4)
+      .map((j) => ({ body: j.body, source: j.source })),
+    journalInsights: journal.filter((j) => j.kind === "insight").length,
+    habitChecks: habitCheckCount ?? 0,
+  });
 
   const { layerReads, trajectory } = scoreInspection({
     answers,
@@ -166,7 +294,7 @@ ${weightedSummary}
 FINISH WORK (daily behavior): ${describe(layerReads.finish)}
 Overall trajectory: ${trajectory.overall}.
 ${completionRate == null ? "There is little check-in history yet." : `They completed roughly ${Math.round(completionRate * 100)} percent of their tracked cascade goals.`}
-
+${evidence.promptBlock ? `\n${evidence.promptBlock}\n` : ""}
 Write the ${isBaseline ? "baseline" : "comparison"} report now as the JSON object specified.`;
 
   // Generate the report, regenerating once if it breaks a programmatic rule.
@@ -245,7 +373,9 @@ Write the ${isBaseline ? "baseline" : "comparison"} report now as the JSON objec
         status: routed ? "drafted" : "sent",
         raw_answers: answers,
         layer_reads: layerReads,
-        trajectory_read: trajectory,
+        // growth_stats rides inside the trajectory jsonb: the report page's
+        // "record" strip, frozen as of this inspection (no schema change).
+        trajectory_read: { ...trajectory, growth_stats: evidence.stats },
         generated_report: report,
         flag_status: routed ? "routed" : "cleared",
         flag_reasons: flagReasons,
@@ -269,6 +399,20 @@ Write the ${isBaseline ? "baseline" : "comparison"} report now as the JSON objec
       },
       { onConflict: "inspection_id" },
     );
+  } else {
+    // Delivery is notify-then-read-in-app: the email points here, the report
+    // lives here. Best effort; a mail hiccup must not eat the inspection.
+    try {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://foreman.app";
+      await getResend().emails.send({
+        from: getFromAddress(),
+        to: profile.email,
+        subject: reportReadySubject(),
+        html: reportReadyHtml({ name: profile.name, appUrl, hasNote: false }),
+      });
+    } catch (err) {
+      console.error("Inspection report-ready email failed", err);
+    }
   }
 
   return NextResponse.json({

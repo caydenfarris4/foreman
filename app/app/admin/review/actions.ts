@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getFromAddress, getResend } from "@/lib/resend";
+import { reportReadyHtml, reportReadySubject } from "@/lib/emails/inspection";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -57,11 +59,13 @@ export async function approveInspection(input: unknown): Promise<Result> {
   if (edited) update.generated_report = edited;
   if (note) update.cayden_note = note;
 
-  const { error } = await admin
+  const { data: updatedRow, error } = await admin
     .from("inspections")
     .update(update)
-    .eq("id", parsed.data.inspection_id);
-  if (error) return { ok: false, error: "Could not send the report." };
+    .eq("id", parsed.data.inspection_id)
+    .select("user_id")
+    .single();
+  if (error || !updatedRow) return { ok: false, error: "Could not send the report." };
 
   await admin
     .from("review_queue_items")
@@ -71,6 +75,28 @@ export async function approveInspection(input: unknown): Promise<Result> {
       resolved_at: nowIso,
     })
     .eq("inspection_id", parsed.data.inspection_id);
+
+  // Notify-then-read-in-app: tell the user their report cleared review.
+  // Best effort; the approval already landed.
+  try {
+    const { data: profileRow } = await admin
+      .from("profiles")
+      .select("email, name")
+      .eq("id", (updatedRow as { user_id: string }).user_id)
+      .single();
+    const recipient = profileRow as { email: string; name: string | null } | null;
+    if (recipient?.email) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://foreman.app";
+      await getResend().emails.send({
+        from: getFromAddress(),
+        to: recipient.email,
+        subject: reportReadySubject(),
+        html: reportReadyHtml({ name: recipient.name, appUrl, hasNote: !!note }),
+      });
+    }
+  } catch (err) {
+    console.error("Inspection approval email failed", err);
+  }
 
   revalidatePath("/app/admin/review");
   return { ok: true };
