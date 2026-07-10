@@ -141,7 +141,9 @@ export default function HousePreviewPage() {
                 goals={seed}
                 build={computeBuild(seed, { hasPlan: true })}
                 tenYearText={TEN_YEAR}
+                fiveYearText="Run a team of 20 with low turnover. Mentor three people into leadership."
                 sixMonthText="Ship the team operating rhythm and run it for a full quarter."
+                principleNames={["Reconciliation", "Refinement", "Culture", "Pressure"]}
               />
             )}
           </div>

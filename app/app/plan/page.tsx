@@ -69,12 +69,16 @@ export default async function PlanPage() {
         <h1 className="type-h1 mt-2 text-ink">Build your house.</h1>
       </header>
 
-      {/* Centerpiece: the five-stage house journey + progressive build. */}
+      {/* Centerpiece: the five-stage house journey + progressive build. The
+          blueprint itself renders inside the journey as the house's anatomy
+          (roof = vision … foundation = principles). */}
       <PlanJourney
         goals={goals}
         build={build}
         tenYearText={plan.ten_year_text}
+        fiveYearText={plan.five_year_text}
         sixMonthText={plan.six_month_milestone}
+        principleNames={selectedKeys.map((k) => principleByKey(k).name)}
       />
 
       {/* Principle mapping (AI → user-confirmed). */}
@@ -88,29 +92,12 @@ export default async function PlanPage() {
         }))}
       />
 
-      {/* Blueprint details + edit */}
-      <section className="overflow-hidden rounded-lg border border-rule bg-chalk">
-        <BlueprintRow label="Ten-year direction" body={plan.ten_year_text} />
-        <BlueprintRow label="Five-year milestones" body={plan.five_year_text} />
-        <BlueprintRow label="Six-month milestone" body={plan.six_month_milestone} />
-        <div className="border-t border-rule p-4">
-          <p className="type-cap text-graphite">PRINCIPLES TO MASTER</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {selectedKeys.length ? (
-              selectedKeys.map((k) => (
-                <span
-                  key={k}
-                  className="type-label rounded-full border border-ink/20 bg-paper2 px-3 py-1 text-ink2"
-                >
-                  {principleByKey(k).name}
-                </span>
-              ))
-            ) : (
-              <span className="type-caption text-graphite">None chosen yet.</span>
-            )}
-          </div>
-        </div>
-        <details className="border-t border-rule">
+      {/* Edit the blueprint (the panel up top links here). */}
+      <section
+        id="edit-blueprint"
+        className="scroll-mt-16 overflow-hidden rounded-lg border border-rule bg-chalk"
+      >
+        <details>
           <summary className="type-label cursor-pointer px-4 py-3 text-graphite hover:text-ink">
             Edit blueprint
           </summary>
@@ -126,17 +113,6 @@ export default async function PlanPage() {
           </div>
         </details>
       </section>
-    </div>
-  );
-}
-
-function BlueprintRow({ label, body }: { label: string; body: string | null }) {
-  return (
-    <div className="border-b border-rule p-4">
-      <p className="type-cap text-graphite">{label.toUpperCase()}</p>
-      <p className="type-body-sm mt-1 whitespace-pre-wrap text-ink2">
-        {body && body.trim() ? body : "—"}
-      </p>
     </div>
   );
 }
