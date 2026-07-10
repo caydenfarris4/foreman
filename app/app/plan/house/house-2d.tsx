@@ -9,12 +9,12 @@
 // "A task completing = a board going up."
 import { motion, useTransform, type MotionValue } from "motion/react";
 
-const INK = "#1A1816";
-const BLUEPRINT = "#1E3A5F";
-const OAK = "#B8843F";
-const OAK_DIM = "#8E6529";
-const PAPER2 = "#ECE6DA";
-const AMBER = "#E8B04B";
+const INK = "#3a352e";
+const BLUEPRINT = "#b26a45";
+const OAK = "#b26a45";
+const OAK_DIM = "#8a6a52";
+const PAPER2 = "#f7f3ec";
+const AMBER = "#e6b25a";
 
 export function House2D({
   progress,
@@ -57,7 +57,7 @@ export function House2D({
   const chimneyY = useTransform(finish, [0, 0.5], [-10, 0]);
 
   // Windows go warm at finishing.
-  const winFill = useTransform(finish, [0, 0.5, 1], ["#2C5478", "#2C5478", AMBER]);
+  const winFill = useTransform(finish, [0, 0.5, 1], ["#9a5a3a", "#9a5a3a", AMBER]);
   const winFillOpacity = useTransform(finish, [0, 1], [0.35, 0.85]);
 
   return (
@@ -72,8 +72,8 @@ export function House2D({
           <path d="M16 0H0V16" fill="none" stroke={BLUEPRINT} strokeOpacity="0.08" strokeWidth="1" />
         </pattern>
         <linearGradient id="h2d-sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#EEF3F8" />
-          <stop offset="100%" stopColor="#E4ECF4" />
+          <stop offset="0%" stopColor="#f6f1e7" />
+          <stop offset="100%" stopColor="#f2ece1" />
         </linearGradient>
         <radialGradient id="h2d-glow" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor={AMBER} stopOpacity="0.85" />
@@ -155,9 +155,9 @@ export function House2D({
 
       {/* Shrubs by the entry — appear at finishing. */}
       <motion.g style={{ opacity: finish }}>
-        <circle cx="130" cy="203" r="7" fill="#4A6B3A" />
+        <circle cx="130" cy="203" r="7" fill="#5f7d69" />
         <circle cx="137" cy="205" r="5" fill="#5A7B47" />
-        <circle cx="196" cy="204" r="6" fill="#4A6B3A" />
+        <circle cx="196" cy="204" r="6" fill="#5f7d69" />
       </motion.g>
 
       {/* Windows — warm "lights on" at finishing. */}

@@ -3,8 +3,14 @@ import { createClient } from "@/lib/supabase/server";
 import { promptForDay } from "@/lib/prompts/daily";
 import { reflectionForDay } from "@/lib/prompts/reflection";
 import { todayInTimezone, weekdayInTimezone } from "@/lib/utils";
-import type { DailyCheckin, Profile } from "@/lib/database.types";
+import type {
+  DailyCheckin,
+  DailyHabit,
+  HabitCheck,
+  Profile,
+} from "@/lib/database.types";
 import { CheckinForm } from "./checkin-form";
+import { HabitChecklist } from "./habit-checklist";
 import { SabbathReflection } from "./sabbath-reflection";
 
 export default async function CheckinPage() {
@@ -36,26 +42,52 @@ export default async function CheckinPage() {
     );
   }
 
-  const { data: existingRow } = await supabase
-    .from("daily_checkins")
-    .select("*")
-    .eq("user_id", user.id)
-    .eq("checkin_date", today)
-    .maybeSingle();
+  const [{ data: existingRow }, { data: habitsData }, { data: checksData }] =
+    await Promise.all([
+      supabase
+        .from("daily_checkins")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("checkin_date", today)
+        .maybeSingle(),
+      supabase
+        .from("daily_habits")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("active", true)
+        .order("sort", { ascending: true })
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("habit_checks")
+        .select("habit_id")
+        .eq("user_id", user.id)
+        .eq("check_date", today),
+    ]);
   const existing = existingRow as DailyCheckin | null;
+  const habits = (habitsData ?? []) as DailyHabit[];
+  const checkedIds = ((checksData ?? []) as Pick<HabitCheck, "habit_id">[]).map(
+    (c) => c.habit_id,
+  );
 
   const promptText =
     existing?.prompt_text ??
     promptForDay(profile.current_phase, today, user.id);
 
   return (
-    <CheckinForm
-      checkinDate={today}
-      promptText={promptText}
-      existingResponse={existing?.user_response ?? null}
-      existingCoaching={existing?.ai_coaching ?? null}
-      existingPhase={existing?.framework_phase ?? null}
-      existingTags={existing?.tags ?? null}
-    />
+    <div className="space-y-4">
+      {/* Small no-writing daily goals — check and move on. */}
+      <div className="px-3 pt-6">
+        <HabitChecklist habits={habits} checkedIds={checkedIds} today={today} />
+      </div>
+
+      <CheckinForm
+        checkinDate={today}
+        promptText={promptText}
+        existingResponse={existing?.user_response ?? null}
+        existingCoaching={existing?.ai_coaching ?? null}
+        existingPhase={existing?.framework_phase ?? null}
+        existingTags={existing?.tags ?? null}
+      />
+    </div>
   );
 }

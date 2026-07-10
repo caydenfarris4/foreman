@@ -12,7 +12,7 @@ export function Wordmark({
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
         <path
           d="M2 2h10v3H5v7H2V2z"
-          fill={dark ? "#B8843F" : "#1E3A5F"}
+          fill={dark ? "#b26a45" : "#b26a45"}
         />
       </svg>
       <span

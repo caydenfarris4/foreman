@@ -15,22 +15,50 @@ interface AppShellProps {
   children: React.ReactNode;
 }
 
+// Cornerstone nav: Home · Journal · Coach · Plan · You. Simple 1.5px line
+// icons, quiet until active (clay).
+const ICON = {
+  width: 22,
+  height: 22,
+  viewBox: "0 0 22 22",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.5,
+  strokeLinejoin: "round" as const,
+  strokeLinecap: "round" as const,
+};
+
 const TABS = [
   {
-    id: "today",
-    label: "Today",
+    id: "home",
+    label: "Home",
     href: "/app",
     icon: (
-      <svg
-        width="22"
-        height="22"
-        viewBox="0 0 22 22"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      >
-        <path d="M5 3h12v16l-6-3-6 3V3z" />
+      <svg {...ICON}>
+        <path d="M4 10.5L11 4l7 6.5" />
+        <path d="M6 9.5V18h10V9.5" />
+      </svg>
+    ),
+  },
+  {
+    id: "journal",
+    label: "Journal",
+    href: "/app/journal",
+    icon: (
+      <svg {...ICON}>
+        <rect x="5" y="4" width="12" height="14" rx="2" />
+        <path d="M8.5 9h5M8.5 12.5h5" />
+      </svg>
+    ),
+  },
+  {
+    id: "coach",
+    label: "Coach",
+    href: "/app/checkin",
+    icon: (
+      <svg {...ICON}>
+        <circle cx="11" cy="11" r="7.5" />
+        <path d="M8 11.2l2 2 4-4.2" />
       </svg>
     ),
   },
@@ -39,55 +67,20 @@ const TABS = [
     label: "Plan",
     href: "/app/plan",
     icon: (
-      <svg
-        width="22"
-        height="22"
-        viewBox="0 0 22 22"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      >
-        <path d="M11 3l8 15H3l8-15z" />
-        <path d="M7.5 11h7M9.2 7.5h3.6" />
+      <svg {...ICON}>
+        <rect x="4" y="4" width="14" height="14" rx="2" />
+        <path d="M4 9h14M9 9v9" />
       </svg>
     ),
   },
   {
-    id: "library",
-    label: "Library",
-    href: "/app/library",
+    id: "you",
+    label: "You",
+    href: "/app/you",
     icon: (
-      <svg
-        width="22"
-        height="22"
-        viewBox="0 0 22 22"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      >
-        <rect x="3" y="4" width="16" height="4" rx="1" />
-        <path d="M4 8v10h14V8M9 12h4" />
-      </svg>
-    ),
-  },
-  {
-    id: "retro",
-    label: "Retro",
-    href: "/app/retro",
-    icon: (
-      <svg
-        width="22"
-        height="22"
-        viewBox="0 0 22 22"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      >
-        <rect x="3" y="5" width="16" height="14" rx="1.5" />
-        <path d="M3 9h16M7 3v4M15 3v4" />
+      <svg {...ICON}>
+        <circle cx="11" cy="8" r="3.5" />
+        <path d="M4.5 18.5c1.2-3 3.7-4.5 6.5-4.5s5.3 1.5 6.5 4.5" />
       </svg>
     ),
   },
@@ -103,16 +96,20 @@ export function AppShell({
   const [menuOpen, setMenuOpen] = useState(false);
   const activeTab =
     pathname === "/app"
-      ? "today"
-      : pathname.startsWith("/app/plan")
-        ? "plan"
-        : pathname.startsWith("/app/library")
-          ? "library"
-          : pathname.startsWith("/app/retro")
-            ? "retro"
-            : pathname.startsWith("/app/settings")
-              ? "settings"
-              : "today";
+      ? "home"
+      : pathname.startsWith("/app/journal")
+        ? "journal"
+        : pathname.startsWith("/app/checkin")
+          ? "coach"
+          : pathname.startsWith("/app/plan") ||
+              pathname.startsWith("/app/inspection")
+            ? "plan"
+            : pathname.startsWith("/app/you") ||
+                pathname.startsWith("/app/settings") ||
+                pathname.startsWith("/app/library") ||
+                pathname.startsWith("/app/retro")
+              ? "you"
+              : "home";
 
   return (
     <div className="min-h-screen bg-paper pb-28">
@@ -193,7 +190,7 @@ export function AppShell({
         className="fixed inset-x-0 bottom-0 z-40 bg-gradient-to-t from-paper to-transparent pb-6 pt-10"
       >
         <div className="container max-w-2xl">
-          <div className="mx-4 grid grid-cols-4 gap-1 rounded-[14px] border border-rule bg-chalk p-1.5 shadow-liftStrong">
+          <div className="mx-4 grid grid-cols-5 gap-0.5 rounded-[18px] border border-rule bg-chalk p-1.5 shadow-liftStrong">
             {TABS.map((t) => {
               const isActive = t.id === activeTab;
               return (
@@ -201,20 +198,23 @@ export function AppShell({
                   key={t.id}
                   href={t.href}
                   className={cn(
-                    "relative flex flex-col items-center gap-0.5 rounded-[9px] py-2 transition-colors",
-                    isActive ? "text-ink" : "text-graphite hover:text-ink2",
+                    "relative flex flex-col items-center gap-0.5 rounded-[12px] py-2 transition-colors",
+                    isActive ? "text-blueprint" : "text-graphite hover:text-ink2",
                   )}
                 >
                   {isActive ? (
                     <motion.span
                       layoutId="tab-pill"
                       transition={settle}
-                      className="absolute inset-0 rounded-[9px] bg-paper2"
+                      className="absolute inset-0 rounded-[12px] bg-blueprint-wash"
                     />
                   ) : null}
                   <span className="relative z-10 flex flex-col items-center gap-0.5">
                     {t.icon}
-                    <span className="type-cap" style={{ fontSize: 10 }}>
+                    <span
+                      className="text-[10px] font-semibold tracking-wide"
+                      style={{ fontFamily: "var(--font-sans)" }}
+                    >
                       {t.label}
                     </span>
                   </span>

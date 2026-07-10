@@ -251,6 +251,34 @@ export interface ReviewQueueItem {
   resolved_at: string | null;
 }
 
+export interface JournalEntry {
+  id: string;
+  user_id: string;
+  entry_date: string;
+  prompt_text: string | null;
+  body: string;
+  tag: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface DailyHabit {
+  id: string;
+  user_id: string;
+  label: string;
+  active: boolean;
+  sort: number;
+  created_at: string;
+}
+
+export interface HabitCheck {
+  id: string;
+  user_id: string;
+  habit_id: string;
+  check_date: string;
+  created_at: string;
+}
+
 type RowOps<T extends { id: string; created_at: string }> = {
   Row: T;
   Insert: Omit<T, "id" | "created_at"> & Partial<Pick<T, "id" | "created_at">>;
@@ -276,6 +304,9 @@ export interface Database {
       inspection_questions: RowOps<InspectionQuestion>;
       inspections: RowOps<Inspection>;
       review_queue_items: RowOps<ReviewQueueItem>;
+      journal_entries: RowOps<JournalEntry>;
+      daily_habits: RowOps<DailyHabit>;
+      habit_checks: RowOps<HabitCheck>;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

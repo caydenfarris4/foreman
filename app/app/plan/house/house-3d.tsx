@@ -33,7 +33,7 @@ import {
   envTexture,
 } from "./textures";
 
-const AMBER = "#E8B04B";
+const AMBER = "#e6b25a";
 const damp = THREE.MathUtils.damp;
 
 function seg(v: number, a: number, b: number): number {
@@ -156,7 +156,7 @@ function Window({
         <boxGeometry args={[width, height, 0.04]} />
         <meshStandardMaterial
           ref={glass}
-          color="#22384f"
+          color="#3d4740"
           roughness={0.08}
           metalness={0.1}
           envMapIntensity={1.4}
@@ -221,7 +221,7 @@ function HouseModel({
       roughness: 0.65,
     });
     const leaf = new THREE.MeshStandardMaterial({
-      color: "#4A6B3A",
+      color: "#5f7d69",
       roughness: 1,
     });
     return { siding, wood, shingle, brick, trim, leaf };
@@ -396,7 +396,7 @@ function HouseModel({
       {/* Grass + path */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
         <circleGeometry args={[5.5, 48]} />
-        <meshStandardMaterial color="#6f834d" roughness={1} />
+        <meshStandardMaterial color="#8ea896" roughness={1} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, front + 1.1]} receiveShadow material={mats.brick}>
         <planeGeometry args={[0.7, 1.8]} />
@@ -470,12 +470,12 @@ export default function House3D({ progress }: { progress: MotionValue<number> })
       gl={{ antialias: tier === "high", powerPreference: "high-performance" }}
       style={{ touchAction: "pan-y" }}
     >
-      <color attach="background" args={["#E4ECF4"]} />
-      <fog attach="fog" args={["#dde7f1", 13, 24]} />
+      <color attach="background" args={["#f2ece1"]} />
+      <fog attach="fog" args={["#efe8da", 13, 24]} />
 
       <Environment />
 
-      <hemisphereLight args={["#d4e4f5", "#b29a78", 0.55]} />
+      <hemisphereLight args={["#f3e8d5", "#b29a78", 0.55]} />
       <directionalLight
         position={[6, 9, 5]}
         intensity={1.6}
@@ -489,7 +489,7 @@ export default function House3D({ progress }: { progress: MotionValue<number> })
         shadow-camera-bottom={-6}
         shadow-bias={-0.0004}
       />
-      <directionalLight position={[-5, 3, -4]} intensity={0.35} color="#cfe0f2" />
+      <directionalLight position={[-5, 3, -4]} intensity={0.35} color="#eadfca" />
 
       <HouseModel progress={progress} tier={tier} />
 

@@ -1,26 +1,22 @@
 import type { Metadata } from "next";
-import { Source_Serif_4, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Newsreader, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 
-const serif = Source_Serif_4({
+// Cornerstone design system: Newsreader (light, literary serif) for display
+// and prompts; Hanken Grotesk for everything else, including the letter-spaced
+// caps that used to be mono.
+const serif = Newsreader({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["300", "400", "500"],
   style: ["normal", "italic"],
   variable: "--font-serif",
   display: "swap",
 });
 
-const sans = IBM_Plex_Sans({
+const sans = Hanken_Grotesk({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-sans",
-  display: "swap",
-});
-
-const mono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-mono",
   display: "swap",
 });
 
@@ -37,7 +33,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${serif.variable} ${sans.variable} ${mono.variable}`}
+      className={`${serif.variable} ${sans.variable}`}
     >
       <body>{children}</body>
     </html>

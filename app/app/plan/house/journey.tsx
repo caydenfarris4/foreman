@@ -292,7 +292,7 @@ export function PlanJourney({
         <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Link
             href="/app/plan/checkin"
-            className="flex items-center justify-between rounded-lg bg-ink p-4 text-chalk transition-colors hover:bg-[#2A2620]"
+            className="flex items-center justify-between rounded-lg bg-ink p-4 text-chalk transition-colors hover:bg-[#2e2a24]"
           >
             <span>
               <span className="type-cap text-chalk/55">CHECK-INS</span>
