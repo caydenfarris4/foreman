@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { accessFor } from "@/lib/billing";
 import { PRICING } from "@/lib/stripe";
 import type { Profile } from "@/lib/database.types";
+import { SettingsForm } from "./settings-form";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -33,7 +34,8 @@ export default async function SettingsPage() {
         <p className="type-cap text-graphite">YOUR SITE</p>
         <h1 className="type-h1 mt-2 text-ink">Settings</h1>
         <p className="type-body mt-2 text-graphite">
-          Editable fields are coming next. For now, what&apos;s on file.
+          Your rhythm drives the whole site: the daily prompt, the retro email,
+          and the sabbath all follow what you set here.
         </p>
       </div>
 
@@ -50,7 +52,19 @@ export default async function SettingsPage() {
         </Link>
       ) : null}
 
-      {/* Billing */}
+      <SettingsForm
+        initial={{
+          name: profile.name ?? "",
+          role_title: profile.role_title ?? "",
+          current_challenge: profile.current_challenge ?? "",
+          sabbath_day: profile.sabbath_day,
+          retro_day: profile.retro_day,
+          notification_time: profile.notification_time?.slice(0, 5) ?? "07:00",
+          timezone: profile.timezone,
+        }}
+      />
+
+      {/* Billing summary — the full membership view lives on /app/upgrade. */}
       <div className="rounded-lg border border-rule bg-chalk p-5">
         <div className="flex items-baseline justify-between">
           <p className="type-cap text-graphite">BILLING</p>
@@ -96,13 +110,9 @@ export default async function SettingsPage() {
           ) : null}
         </dl>
         <div className="mt-5 flex flex-wrap gap-2">
-          {profile.stripe_customer_id ? (
-            <form action="/api/stripe/portal" method="post">
-              <Button type="submit" variant="secondary" size="md">
-                Open billing portal
-              </Button>
-            </form>
-          ) : null}
+          <Button asChild variant="secondary" size="md">
+            <Link href="/app/upgrade">Membership &amp; billing</Link>
+          </Button>
           {profile.subscription_status !== "active" ? (
             <Button asChild size="md">
               <a href="/app/upgrade">Pick a plan</a>
@@ -111,23 +121,13 @@ export default async function SettingsPage() {
         </div>
       </div>
 
-      {/* Profile */}
+      {/* On file from onboarding — context the coach uses, not settings. */}
       <div className="rounded-lg border border-rule bg-chalk p-5">
-        <p className="type-cap text-graphite">PROFILE · {user.email}</p>
+        <p className="type-cap text-graphite">ON FILE · {user.email}</p>
         <dl className="mt-4 grid grid-cols-1 divide-y divide-rule">
-          <Row label="Name" value={profile.name} />
-          <Row label="Role" value={profile.role_title} />
           <Row label="Team size" value={profile.team_size?.toString()} />
           <Row label="Started managing" value={profile.promoted_at} />
-          <Row label="Current focus" value={profile.current_challenge} />
           <Row label="Current phase" value={profile.current_phase} />
-          <Row label="Sabbath day" value={profile.sabbath_day} />
-          <Row label="Retro day" value={profile.retro_day} />
-          <Row
-            label="Daily prompt time"
-            value={profile.notification_time?.slice(0, 5)}
-          />
-          <Row label="Timezone" value={profile.timezone} />
         </dl>
       </div>
     </div>
