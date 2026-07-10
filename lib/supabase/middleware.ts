@@ -41,7 +41,6 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const isAuthRoute = pathname === "/login" || pathname === "/signup";
   const isAppRoute = pathname.startsWith("/app") || pathname === "/onboarding";
 
   if (!user && isAppRoute) {
@@ -51,7 +50,10 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && isAuthRoute) {
+  // A signed-in user visiting /login is NOT silently bounced into the
+  // session's account — the page shows "continue as …" with a switch-account
+  // option instead (sessions persist; whose session stays explicit).
+  if (user && pathname === "/signup") {
     const url = request.nextUrl.clone();
     url.pathname = "/app";
     return NextResponse.redirect(url);
