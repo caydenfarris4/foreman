@@ -30,8 +30,107 @@ export default async function UpgradePage({
   const access = accessFor(profile);
   const cancelled = params.checkout === "cancelled";
 
-  // If the user is already active, no need to be here — bounce them home.
-  if (access.state === "active") redirect("/app");
+  // Active members get the membership view, not the upgrade funnel — this is
+  // the "Membership · Plan & billing" destination from the You hub.
+  if (access.state === "active") {
+    const planLabel =
+      profile.stripe_price_id === process.env.STRIPE_PRICE_YEARLY
+        ? `Yearly · ${PRICING.yearly.display}${PRICING.yearly.suffix}`
+        : profile.stripe_price_id === process.env.STRIPE_PRICE_MONTHLY
+          ? `Monthly · ${PRICING.monthly.display}${PRICING.monthly.suffix}`
+          : "Complimentary";
+    const memberSince = new Date(profile.created_at).toLocaleDateString(
+      "en-US",
+      { month: "long", year: "numeric" },
+    );
+    const nextCharge = profile.subscription_current_period_end
+      ? new Date(profile.subscription_current_period_end).toLocaleDateString(
+          "en-US",
+          { month: "long", day: "numeric", year: "numeric" },
+        )
+      : null;
+
+    const { count: coachingCredits } = await supabase
+      .from("coaching_sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id);
+
+    return (
+      <div className="px-3 pb-8 pt-4">
+        <div className="px-1">
+          <div className="mb-2 h-[2px] w-7 bg-oak" />
+          <p className="type-cap text-oak-dim">MEMBERSHIP</p>
+          <h1 className="type-h1 mt-2 text-ink">The site stays open.</h1>
+          <p className="type-body mt-2 text-graphite">
+            You&apos;re an active member. Everything below is where your plan
+            and billing live.
+          </p>
+        </div>
+
+        <div className="mt-6 rounded-lg border border-moss bg-moss-wash p-5">
+          <div className="flex items-baseline justify-between">
+            <p className="type-cap text-moss">ACTIVE</p>
+            <span className="type-cap text-graphite">
+              MEMBER SINCE {memberSince.toUpperCase()}
+            </span>
+          </div>
+          <dl className="mt-4 grid grid-cols-1 divide-y divide-rule">
+            <MemberRow label="Plan" value={planLabel} />
+            {nextCharge ? (
+              <MemberRow label="Next charge" value={nextCharge} />
+            ) : null}
+            {(coachingCredits ?? 0) > 0 ? (
+              <MemberRow
+                label="1:1 sessions with Cayden"
+                value={`${coachingCredits} on the books`}
+              />
+            ) : null}
+          </dl>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {profile.stripe_customer_id ? (
+              <form action="/api/stripe/portal" method="post">
+                <button
+                  type="submit"
+                  className="type-label rounded-lg bg-ink px-4 py-2.5 text-[oklch(0.97_0.01_80)] transition-colors hover:bg-[oklch(0.26_0.02_55)]"
+                >
+                  Manage billing
+                </button>
+              </form>
+            ) : (
+              <p className="type-caption text-graphite">
+                No card on file — your membership doesn&apos;t bill through the
+                app.
+              </p>
+            )}
+          </div>
+          {profile.stripe_customer_id ? (
+            <p className="type-caption mt-3 text-graphite">
+              Update your card, switch between monthly and yearly, download
+              invoices, or cancel — all in the billing portal.
+            </p>
+          ) : null}
+        </div>
+
+        <div className="mt-5 space-y-3 rounded-md border border-rule bg-chalk p-5">
+          <p className="type-cap text-graphite">WHAT YOUR MEMBERSHIP CARRIES</p>
+          <ul className="space-y-2">
+            {[
+              "A daily prompt grounded in the Under Construction framework",
+              "Real coaching back, under 250 words, in the foreman's voice",
+              "A searchable library of every situation you've worked through",
+              "A weekly site report that names the pattern across the week",
+              "The six-month Growth Inspection that reads your record back to you",
+            ].map((line) => (
+              <li key={line} className="flex items-start gap-2.5">
+                <CheckIcon />
+                <span className="type-body text-ink2">{line}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  }
 
   const eyebrow =
     access.state === "trialing"
@@ -159,6 +258,15 @@ function PlanCard({
         <span className="type-body text-graphite">{suffix}</span>
       </p>
       <p className="type-body-sm mt-2 text-ink2">{body}</p>
+    </div>
+  );
+}
+
+function MemberRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-3 first:pt-0 last:pb-0">
+      <dt className="type-cap text-graphite">{label}</dt>
+      <dd className="type-body text-ink">{value}</dd>
     </div>
   );
 }

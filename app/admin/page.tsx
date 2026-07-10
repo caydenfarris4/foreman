@@ -57,6 +57,12 @@ export default async function AdminHome() {
     .eq("status", "accepted")
     .lt("accepted_at", sevenDaysAgo.toISOString());
 
+  // Inspection reports waiting on review — these never auto-release.
+  const { count: pendingReviews } = await supabase
+    .from("review_queue_items")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending");
+
   return (
     <div className="space-y-8">
       <div>
@@ -94,6 +100,36 @@ export default async function AdminHome() {
           }
           sub={`${cohorts.length} total`}
         />
+      </section>
+
+      <section className="grid gap-3 sm:grid-cols-2">
+        <Link
+          href="/app/admin/review"
+          className={`flex items-center justify-between rounded-lg border p-4 transition-colors ${
+            (pendingReviews ?? 0) > 0
+              ? "border-oak bg-oak-wash hover:bg-oak/20"
+              : "border-rule bg-chalk hover:bg-paper2/40"
+          }`}
+        >
+          <span>
+            <span className="type-cap text-graphite">INSPECTIONS</span>
+            <span className="type-label mt-1 block text-ink">
+              Review queue
+              {(pendingReviews ?? 0) > 0 ? ` · ${pendingReviews} waiting` : ""}
+            </span>
+          </span>
+          <span className="type-label text-oak-dim">Open →</span>
+        </Link>
+        <Link
+          href="/admin/mentors"
+          className="flex items-center justify-between rounded-lg border border-rule bg-chalk p-4 transition-colors hover:bg-paper2/40"
+        >
+          <span>
+            <span className="type-cap text-graphite">COHORT PROGRAM</span>
+            <span className="type-label mt-1 block text-ink">Guest mentors</span>
+          </span>
+          <span className="type-label text-oak-dim">Open →</span>
+        </Link>
       </section>
 
       <section>
