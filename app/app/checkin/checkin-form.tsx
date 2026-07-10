@@ -126,7 +126,7 @@ export function CheckinForm({
   return (
     <div className="space-y-5 px-3 pb-8 pt-4">
       <div className="flex items-center justify-between">
-        <span className="type-cap text-oak-dim">TODAY · CHECK-IN</span>
+        <span className="type-cap text-oak-dim">COACH · DAILY CHECK-IN</span>
         <span className="type-cap text-graphite">{dateLabel}</span>
       </div>
 

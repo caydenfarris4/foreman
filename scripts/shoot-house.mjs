@@ -11,7 +11,13 @@ const BASE = `http://localhost:${PORT}`;
 const OUT = process.env.OUT_DIR || "/tmp/house-shots";
 const CHROMIUM = process.env.PLAYWRIGHT_CHROMIUM_PATH || "/opt/pw-browsers/chromium";
 
-const SHOTS = process.env.NEXTMOVE
+const SHOTS = process.env.CORNERSTONE
+  ? [
+      { name: "cs-journey", q: "house3d=off&scenario=progress", wait: 3200 },
+      { name: "cs-wizard", q: "view=wizard&house3d=off", wait: 3200 },
+      { name: "cs-login", url: "/login", wait: 2200 },
+    ]
+  : process.env.NEXTMOVE
   ? [
       { name: "nextmove-progress", q: "house3d=off&scenario=progress", wait: 3500 },
       { name: "nextmove-foundation", q: "house3d=off&scenario=empty", wait: 3000 },
@@ -80,7 +86,7 @@ async function main() {
     const page = await ctx.newPage();
 
     for (const shot of SHOTS) {
-      const url = `${BASE}/preview/house?${shot.q}`;
+      const url = shot.url ? `${BASE}${shot.url}` : `${BASE}/preview/house?${shot.q}`;
       console.log("→", shot.name, url);
       await page.goto(url, { waitUntil: "load", timeout: 60_000 });
       await sleep(shot.wait);
