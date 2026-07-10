@@ -42,14 +42,19 @@ export function PlanJourney({
   goals,
   build,
   tenYearText,
+  fiveYearText = null,
   sixMonthText = null,
+  principleNames = [],
   demo = false,
 }: {
   goals: GrowthGoal[];
   build: BuildState;
   tenYearText: string | null;
+  fiveYearText?: string | null;
   /** The plan's six-month milestone — anchors the first monthly quick-add. */
   sixMonthText?: string | null;
+  /** Chosen principles (display names) — the foundation bar. */
+  principleNames?: string[];
   // Dev-only: drive add/complete/delete through local state (no Supabase) so
   // the journey is fully interactive in the /preview route. Production passes
   // the real server-backed goals and leaves this false.
@@ -234,6 +239,18 @@ export function PlanJourney({
       {/* Hero */}
       <div ref={heroRef} className="px-1">
         <HouseScene progress={houseBuild} realOverall={effectiveBuild.overall} />
+
+        {/* The blueprint, drawn as the house itself: roof = vision, walls =
+            five-year, door level = six-month, foundation = principles. Each
+            level jumps to its stage in the cascade below. */}
+        <Reveal as="boardUp" className="mt-2.5">
+          <BlueprintPanel
+            vision={tenYearText}
+            fiveYear={fiveYearText}
+            sixMonth={sixMonthText}
+            principles={principleNames}
+          />
+        </Reveal>
         {effectiveBuild.totalGoals === 0 ? (
           <div className="mt-3 rounded-lg border border-oak/30 bg-oak-wash p-3.5">
             <p className="type-cap text-oak-dim">FOUNDATION LAID</p>
@@ -486,6 +503,92 @@ function QuickAddCard({
           )}
         </motion.div>
       </AnimatePresence>
+    </div>
+  );
+}
+
+
+// The plan rendered as the anatomy of the house — the mock's home-screen
+// diagram made real. Prominent by design: everything below cascades from it.
+function BlueprintPanel({
+  vision,
+  fiveYear,
+  sixMonth,
+  principles,
+}: {
+  vision: string | null;
+  fiveYear: string | null;
+  sixMonth: string | null;
+  principles: string[];
+}) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-rule bg-chalk shadow-lift">
+      {/* Roof — the ten-year vision holds everything up. */}
+      <a href="#stage-vision" className="block transition-opacity hover:opacity-90">
+        <div className="mx-auto h-9 w-[94%] bg-blueprint [clip-path:polygon(50%_0,100%_100%,0_100%)]" />
+        <div className="surface-blueprint px-5 pb-4 pt-3 text-center">
+          <p className="type-cap text-blueprint">THE ROOF · 10-YEAR VISION</p>
+          {vision ? (
+            <p className="type-prompt mt-2 text-[18px] text-ink">
+              &ldquo;{vision}&rdquo;
+            </p>
+          ) : (
+            <p className="type-body-sm mt-2 text-graphite">
+              Draw your ten-year direction to raise the roof.
+            </p>
+          )}
+        </div>
+      </a>
+
+      {/* Upper walls — five-year milestones. */}
+      <a
+        href="#stage-vision"
+        className="block border-t border-ruleSoft px-5 py-3.5 transition-colors hover:bg-paper2/50"
+      >
+        <p className="type-cap text-graphite">THE WALLS · FIVE-YEAR MILESTONES</p>
+        <p className="type-body-sm mt-1 text-ink2">
+          {fiveYear?.trim() ? fiveYear : "—"}
+        </p>
+      </a>
+
+      {/* Door level — the six-month milestone you walk through next. */}
+      <a
+        href="#stage-blueprint"
+        className="block border-t border-ruleSoft px-5 py-3.5 transition-colors hover:bg-paper2/50"
+      >
+        <p className="type-cap text-graphite">
+          THE DOOR · SIX-MONTH MILESTONE
+        </p>
+        <p className="type-body-sm mt-1 text-ink2">
+          {sixMonth?.trim() ? sixMonth : "—"}
+        </p>
+      </a>
+
+      {/* Foundation — the principles everything rests on. */}
+      <a
+        href="#edit-blueprint"
+        className="surface-ink block px-5 py-4 transition-opacity hover:opacity-95"
+      >
+        <p className="type-cap text-oak">
+          {principles.length || "YOUR"} PRINCIPLE{principles.length === 1 ? "" : "S"} · YOUR FOUNDATION
+        </p>
+        {principles.length ? (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {principles.map((name) => (
+              <span
+                key={name}
+                className="type-label rounded-full border border-[oklch(0.97_0.01_80/0.25)] px-3 py-1 text-[oklch(0.96_0.01_80)]"
+              >
+                {name}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="type-caption mt-1.5 text-[oklch(0.95_0.01_80/0.7)]">
+            Choose 2–4 principles to pour the foundation.
+          </p>
+        )}
+      </a>
     </div>
   );
 }
