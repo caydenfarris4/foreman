@@ -39,6 +39,10 @@ export default async function JournalPage() {
     <div className="space-y-6 px-3 pb-8 pt-6">
       <header className="px-1">
         <h1 className="type-h1 text-ink">Journal</h1>
+        <p className="type-caption mt-1.5 italic text-graphite">
+          &ldquo;Knowledge carefully recorded is knowledge available in a time
+          of need.&rdquo;
+        </p>
       </header>
 
       <JournalComposer promptText={prompt} />
@@ -62,24 +66,54 @@ export default async function JournalPage() {
                       {dayLabel(e.entry_date)}
                     </span>
                     <span className="flex items-center gap-3">
-                      {e.tag ? (
-                        <span className="type-cap text-graphite">{e.tag}</span>
-                      ) : null}
+                      <span className="type-cap text-graphite">
+                        {e.kind === "quote"
+                          ? "QUOTE"
+                          : e.kind === "insight"
+                            ? "COACH"
+                            : (e.tag ?? "")}
+                      </span>
                       <DeleteEntryButton id={e.id} />
                     </span>
                   </div>
-                  <p className="type-body-sm mt-1 line-clamp-2 text-ink2 group-open:hidden">
-                    {e.body}
-                  </p>
+                  {e.kind === "quote" ? (
+                    <blockquote className="mt-1.5 border-l-2 border-blueprint pl-3 group-open:hidden">
+                      <p className="type-prompt line-clamp-2 text-[17px] text-ink2">
+                        &ldquo;{e.body}&rdquo;
+                      </p>
+                      {e.source ? (
+                        <p className="type-caption mt-1 text-graphite">
+                          — {e.source}
+                        </p>
+                      ) : null}
+                    </blockquote>
+                  ) : (
+                    <p className="type-body-sm mt-1 line-clamp-2 text-ink2 group-open:hidden">
+                      {e.body}
+                    </p>
+                  )}
                 </summary>
                 {e.prompt_text ? (
                   <p className="type-caption mt-2 italic text-graphite">
                     {e.prompt_text}
                   </p>
                 ) : null}
-                <p className="type-body-sm mt-2 whitespace-pre-wrap text-ink2">
-                  {e.body}
-                </p>
+                {e.kind === "quote" ? (
+                  <blockquote className="mt-2 border-l-2 border-blueprint pl-3">
+                    <p className="type-prompt whitespace-pre-wrap text-[17px] text-ink2">
+                      &ldquo;{e.body}&rdquo;
+                    </p>
+                    {e.source ? (
+                      <p className="type-caption mt-1.5 text-graphite">
+                        — {e.source}
+                      </p>
+                    ) : null}
+                  </blockquote>
+                ) : (
+                  <p className="type-body-sm mt-2 whitespace-pre-wrap text-ink2">
+                    {e.body}
+                  </p>
+                )}
               </details>
             ))}
           </div>

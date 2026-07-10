@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button, Spinner } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { saveJournalEntry } from "../journal/actions";
 
 interface Props {
   checkinDate: string;
@@ -186,6 +187,8 @@ export function CheckinForm({
             ) : null}
           </div>
 
+          <SaveToJournal coaching={coaching} promptText={promptText} />
+
           <p className="type-caption text-center text-graphite">
             Saved to your library. Come back tomorrow.
           </p>
@@ -246,6 +249,58 @@ export function CheckinForm({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// Keep the key point: saves the coaching into the journal as an `insight`,
+// where the coach can draw on it later — knowledge carefully recorded is
+// knowledge available in a time of need.
+function SaveToJournal({
+  coaching,
+  promptText,
+}: {
+  coaching: string;
+  promptText: string;
+}) {
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+
+  if (saved) {
+    return (
+      <p className="type-caption text-center text-moss">
+        Kept in your journal — your coach will remember this.
+      </p>
+    );
+  }
+
+  return (
+    <div className="text-center">
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() =>
+          start(async () => {
+            setError(null);
+            const res = await saveJournalEntry({
+              body: coaching,
+              prompt_text: promptText,
+              kind: "insight",
+              source: "Coach",
+            });
+            if (res.ok) setSaved(true);
+            else setError(res.error);
+          })
+        }
+        className="type-label inline-flex items-center gap-1.5 rounded-lg border border-rule bg-chalk px-4 py-2.5 text-ink2 transition-colors hover:border-blueprint hover:text-blueprint"
+      >
+        {pending ? <Spinner /> : null}
+        Keep this in my journal
+      </button>
+      {error ? (
+        <p className="type-caption mt-2 text-rust">{error}</p>
+      ) : null}
     </div>
   );
 }

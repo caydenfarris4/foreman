@@ -251,6 +251,8 @@ export interface ReviewQueueItem {
   resolved_at: string | null;
 }
 
+export type JournalKind = "reflection" | "quote" | "insight";
+
 export interface JournalEntry {
   id: string;
   user_id: string;
@@ -258,6 +260,10 @@ export interface JournalEntry {
   prompt_text: string | null;
   body: string;
   tag: string | null;
+  /** reflection = free writing; quote = kept from reading; insight = saved from the coach. */
+  kind: JournalKind;
+  /** Attribution for quotes ("Under Construction — C. Farris") or "Coach". */
+  source: string | null;
   created_at: string;
   updated_at: string | null;
 }

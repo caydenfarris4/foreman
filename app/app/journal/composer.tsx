@@ -12,12 +12,22 @@ import { saveJournalEntry, deleteJournalEntry } from "./actions";
 
 export function JournalComposer({ promptText }: { promptText: string }) {
   const router = useRouter();
-  const [mode, setMode] = useState<"closed" | "prompted" | "blank">("closed");
+  const [mode, setMode] = useState<"closed" | "prompted" | "blank" | "quote">(
+    "closed",
+  );
   const [body, setBody] = useState("");
+  const [source, setSource] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   const open = mode !== "closed";
+
+  function close() {
+    setMode("closed");
+    setBody("");
+    setSource("");
+    setError(null);
+  }
 
   function save() {
     const text = body.trim();
@@ -27,13 +37,14 @@ export function JournalComposer({ promptText }: { promptText: string }) {
       const res = await saveJournalEntry({
         body: text,
         prompt_text: mode === "prompted" ? promptText : null,
+        kind: mode === "quote" ? "quote" : "reflection",
+        source: mode === "quote" && source.trim() ? source.trim() : null,
       });
       if (!res.ok) {
         setError(res.error);
         return;
       }
-      setBody("");
-      setMode("closed");
+      close();
       router.refresh();
     });
   }
@@ -67,20 +78,53 @@ export function JournalComposer({ promptText }: { promptText: string }) {
             className="overflow-hidden"
           >
             <div className="mt-3 rounded-xl border border-rule bg-chalk p-4">
-              {mode === "blank" ? (
-                <p className="type-cap mb-2 text-graphite">NEW ENTRY</p>
+              {/* Reflection vs quote — a quote is knowledge kept from reading. */}
+              {mode !== "prompted" ? (
+                <div className="mb-3 flex gap-1.5">
+                  {(
+                    [
+                      ["blank", "Reflection"],
+                      ["quote", "Quote"],
+                    ] as const
+                  ).map(([m, label]) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setMode(m)}
+                      className={
+                        "type-cap rounded-full border px-3 py-1.5 transition-colors " +
+                        (mode === m
+                          ? "border-blueprint bg-blueprint text-[oklch(0.98_0.01_80)]"
+                          : "border-rule bg-paper text-graphite hover:text-ink")
+                      }
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               ) : null}
               <Textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                rows={6}
+                rows={mode === "quote" ? 4 : 6}
                 autoFocus
                 placeholder={
                   mode === "prompted"
                     ? "Write it plainly — no one is grading this…"
-                    : "What's on your mind?"
+                    : mode === "quote"
+                      ? "Copy the line worth keeping…"
+                      : "What's on your mind?"
                 }
               />
+              {mode === "quote" ? (
+                <input
+                  value={source}
+                  onChange={(e) => setSource(e.target.value)}
+                  maxLength={120}
+                  placeholder="Source — book, author, talk…"
+                  className="type-body-sm mt-2 w-full rounded-lg border border-rule bg-paper px-3 py-2.5 text-ink outline-none focus:border-blueprint"
+                />
+              ) : null}
               {error ? (
                 <p className="type-caption mt-2 text-rust">{error}</p>
               ) : null}
@@ -94,22 +138,22 @@ export function JournalComposer({ promptText }: { promptText: string }) {
                     <>
                       <Spinner /> Saving…
                     </>
+                  ) : mode === "quote" ? (
+                    "Keep the quote"
                   ) : (
                     "Save entry"
                   )}
                 </Button>
-                <Button
-                  size="md"
-                  variant="ghost"
-                  onClick={() => {
-                    setMode("closed");
-                    setBody("");
-                    setError(null);
-                  }}
-                >
+                <Button size="md" variant="ghost" onClick={close}>
                   Cancel
                 </Button>
               </div>
+              {mode === "quote" ? (
+                <p className="type-caption mt-3 border-t border-ruleSoft pt-2.5 italic text-graphite">
+                  Knowledge carefully recorded is knowledge available in a time
+                  of need — your coach draws on what you keep here.
+                </p>
+              ) : null}
             </div>
           </motion.div>
         ) : null}

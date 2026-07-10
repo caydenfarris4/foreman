@@ -9,6 +9,8 @@ import {
 } from "@/lib/anthropic";
 import { buildSystemPrompt } from "@/lib/prompts";
 import { inspectionContextLine } from "@/lib/inspection/context";
+import { recordedKnowledgeBlock } from "@/lib/journal-context";
+import type { JournalEntry } from "@/lib/database.types";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { accessFor, canUseAi } from "@/lib/billing";
 import type { TrajectoryRead } from "@/lib/inspection/scoring";
@@ -99,9 +101,27 @@ export async function POST(request: NextRequest) {
     (lastInspection as { trajectory_read: TrajectoryRead | null } | null)
       ?.trajectory_read ?? null,
   );
-  const systemPrompt = contextLine
-    ? `${buildSystemPrompt(profile)}\n\n${contextLine}`
-    : buildSystemPrompt(profile);
+
+  // Recorded knowledge: the user's journal (kept quotes, saved insights,
+  // recent reflections) becomes coaching context. Failure-safe — if the
+  // journal tables/columns aren't migrated yet, data is null and the block
+  // is empty; coaching proceeds exactly as before.
+  const { data: journalRows } = await supabase
+    .from("journal_entries")
+    .select("kind, body, source, entry_date")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(24);
+  const knowledgeBlock = recordedKnowledgeBlock(
+    (journalRows ?? []) as Pick<
+      JournalEntry,
+      "kind" | "body" | "source" | "entry_date"
+    >[],
+  );
+
+  const systemPrompt = [buildSystemPrompt(profile), contextLine, knowledgeBlock]
+    .filter(Boolean)
+    .join("\n\n");
 
   let coachingText: string | null = null;
   let phase: "foundation" | "framing" | "finishing" = profile.current_phase;
