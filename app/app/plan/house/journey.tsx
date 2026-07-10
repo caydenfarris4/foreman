@@ -497,7 +497,7 @@ function QuickAddCard({
           ) : (
             <div className="mt-4">
               <Button asChild size="md">
-                <Link href="/app/plan/checkin">{move.cta} →</Link>
+                <Link href="/app#daily-checkin">{move.cta} →</Link>
               </Button>
             </div>
           )}

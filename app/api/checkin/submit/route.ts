@@ -159,11 +159,33 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Today's boards — the planned daily work — so the coaching can connect
+  // what they wrote to what they said they'd build today. Failure-safe.
+  let boardsLine = "";
+  const { data: boardRows } = await supabase
+    .from("growth_goals")
+    .select("body, status")
+    .eq("user_id", user.id)
+    .eq("level", "daily")
+    .neq("status", "dropped")
+    .order("created_at", { ascending: true })
+    .limit(12);
+  const boardList = (boardRows ?? []) as { body: string; status: string }[];
+  if (boardList.length) {
+    const open = boardList.filter((b) => b.status === "open").map((b) => b.body);
+    const done = boardList.filter((b) => b.status === "done").map((b) => b.body);
+    const parts: string[] = [];
+    if (open.length) parts.push(`still open: ${open.join("; ")}`);
+    if (done.length) parts.push(`completed: ${done.join("; ")}`);
+    boardsLine = `TODAY'S BOARDS (their planned daily work from the cascade) — ${parts.join(" · ")}. If what they wrote connects to one of these, tie the coaching to the actual board — the plan and the reflection are one ritual.`;
+  }
+
   const systemPrompt = [
     buildSystemPrompt(profile),
     contextLine,
     knowledgeBlock,
     cohortLine,
+    boardsLine,
   ]
     .filter(Boolean)
     .join("\n\n");
