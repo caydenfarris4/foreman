@@ -19,11 +19,14 @@ import type {
   DailyCheckin,
   DailyHabit,
   FrameworkPhase,
+  GrowthGoal,
   HabitCheck,
   Profile,
   Situation,
 } from "@/lib/database.types";
 import { CheckinForm } from "./checkin/checkin-form";
+import { TodayBoards } from "./today-boards";
+import { autoParentId } from "./plan/house/progress";
 import { HabitChecklist } from "./checkin/habit-checklist";
 
 function ArrowIcon({ size = 16 }: { size?: number }) {
@@ -115,8 +118,12 @@ export default async function DashboardPage({
   const weekday = weekdayInTimezone(profile.timezone);
   const onSabbath = profile.sabbath_day === weekday;
 
-  const [{ data: todayRow }, { data: habitsData }, { data: checksData }] =
-    await Promise.all([
+  const [
+    { data: todayRow },
+    { data: habitsData },
+    { data: checksData },
+    { data: goalsData },
+  ] = await Promise.all([
       supabase
         .from("daily_checkins")
         .select("*")
@@ -135,12 +142,31 @@ export default async function DashboardPage({
         .select("habit_id")
         .eq("user_id", user.id)
         .eq("check_date", today),
+      supabase
+        .from("growth_goals")
+        .select("id, body, status, level, created_at, updated_at")
+        .eq("user_id", user.id)
+        .in("level", ["daily", "weekly"])
+        .neq("status", "dropped")
+        .order("created_at", { ascending: true }),
     ]);
   const todayCheckin = todayRow as DailyCheckin | null;
   const habits = (habitsData ?? []) as DailyHabit[];
   const checkedIds = ((checksData ?? []) as Pick<HabitCheck, "habit_id">[]).map(
     (c) => c.habit_id,
   );
+  const planGoals = (goalsData ?? []) as GrowthGoal[];
+  // Today's boards: open dailies plus any completed today (momentum stays
+  // visible; yesterday's finished work doesn't clutter the morning).
+  const boards = planGoals
+    .filter((g) => g.level === "daily")
+    .filter(
+      (g) =>
+        g.status === "open" ||
+        (g.status === "done" && (g.updated_at ?? "").slice(0, 10) >= today),
+    )
+    .map((g) => ({ id: g.id, body: g.body, status: g.status }));
+  const boardParentId = autoParentId("daily", planGoals);
 
   const { data: monthCheckinsData } = await supabase
     .from("daily_checkins")
@@ -325,8 +351,12 @@ export default async function DashboardPage({
             </div>
           </a>
 
-          {/* The daily check-in itself — moved home from the Coach tab. */}
-          <section id="daily-checkin" className="scroll-mt-16">
+          {/* The daily check-in itself — boards first, then the reflection.
+              One ritual: check the work, then talk about it. */}
+          <section id="daily-checkin" className="scroll-mt-16 space-y-4">
+            <div className="mx-3">
+              <TodayBoards boards={boards} autoParentId={boardParentId} />
+            </div>
             <CheckinForm
               checkinDate={today}
               promptText={promptText}

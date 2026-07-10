@@ -239,7 +239,7 @@ export function nextMove(build: BuildState): NextMove {
       level: "daily",
       title: "Work today's plan",
       instruction: `You have ${openToday} board${openToday > 1 ? "s" : ""} to lay today. Check one off and the house rises.`,
-      cta: "Open the cascade check-in",
+      cta: "Open today's check-in",
       kind: "complete",
     };
   }

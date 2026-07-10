@@ -9,6 +9,7 @@ import {
   validateWeightedSelection,
 } from "@/lib/inspection/principles";
 import type { GoalLevel, GoalStatus } from "@/lib/database.types";
+import { todayInTimezone } from "@/lib/utils";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -156,6 +157,7 @@ export async function addGoal(input: unknown): Promise<Result> {
   });
   if (error) return { ok: false, error: "Could not add the goal." };
 
+  revalidatePath("/app");
   revalidatePath("/app/plan");
   return { ok: true };
 }
@@ -342,6 +344,77 @@ export async function saveCascadeCheckin(input: unknown): Promise<Result> {
   }
 
   revalidatePath("/app/plan/checkin");
+  revalidatePath("/app/plan");
+  return { ok: true };
+}
+
+// ---- Home ↔ Plan bridge (one daily surface) --------------------------------
+
+const BoardToggleSchema = z.object({
+  goal_id: z.string().uuid(),
+  completed: z.boolean(),
+});
+
+// Toggle a daily board from the Home check-in. Does BOTH halves of the
+// bridge: flips the goal's status (the house rises) AND records the
+// completion in today's daily cascade check-in — the completion history the
+// six-month inspection reads. Without the second write, checking boards on
+// Home would silently starve the inspection of its behavioral anchor.
+export async function toggleDailyBoard(input: unknown): Promise<Result> {
+  const parsed = BoardToggleSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Bad request." };
+  const { supabase, userId } = await currentUserId();
+  if (!userId) return { ok: false, error: "Not signed in." };
+  const { goal_id, completed } = parsed.data;
+
+  // Ownership + level check (RLS also enforces ownership).
+  const { data: goalRow } = await supabase
+    .from("growth_goals")
+    .select("id, level")
+    .eq("id", goal_id)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!goalRow || (goalRow as { level: string }).level !== "daily") {
+    return { ok: false, error: "Board not found." };
+  }
+
+  const { error: statusError } = await supabase
+    .from("growth_goals")
+    .update({ status: completed ? "done" : "open" })
+    .eq("id", goal_id);
+  if (statusError) return { ok: false, error: "Could not update the board." };
+
+  // Record in today's daily cascade check-in (inspection's anchor).
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("timezone")
+    .eq("id", userId)
+    .maybeSingle();
+  const timezone =
+    (profileRow as { timezone: string } | null)?.timezone ?? "America/Denver";
+  const today = todayInTimezone(timezone);
+
+  const { data: checkinRow, error: upsertError } = await supabase
+    .from("cascade_checkins")
+    .upsert(
+      { user_id: userId, checkin_type: "daily", period_date: today },
+      { onConflict: "user_id,checkin_type,period_date" },
+    )
+    .select("id")
+    .single();
+  if (!upsertError && checkinRow) {
+    await supabase.from("cascade_checkin_goals").upsert(
+      {
+        user_id: userId,
+        checkin_id: (checkinRow as { id: string }).id,
+        goal_id,
+        completed,
+      },
+      { onConflict: "checkin_id,goal_id" },
+    );
+  }
+
+  revalidatePath("/app");
   revalidatePath("/app/plan");
   return { ok: true };
 }
