@@ -131,8 +131,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Prior sent inspection (for comparison) + cycle number.
-  const admin = createAdminClient();
+  // Prior sent inspection (for comparison) + cycle number. The inspection
+  // tables are service-role-write, so a missing runtime secret is a hard
+  // stop — but name it instead of crashing the route.
+  let admin: ReturnType<typeof createAdminClient>;
+  try {
+    admin = createAdminClient();
+  } catch (err) {
+    console.error("Inspection submit: admin client unavailable", err);
+    return NextResponse.json(
+      { error: "The site office is misconfigured (missing server credentials). Your answers were not lost — try again once it's fixed." },
+      { status: 503 },
+    );
+  }
   const { data: priorRows } = await admin
     .from("inspections")
     .select("cycle_number, layer_reads, sent_at, status, flag_status")

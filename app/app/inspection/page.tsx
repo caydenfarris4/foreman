@@ -99,17 +99,31 @@ export default async function InspectionPage() {
     (s) => s.principle,
   );
 
-  // Every inspection, newest first (service role: drafts are hidden by RLS).
-  const admin = createAdminClient();
-  const { data: inspectionRows } = await admin
+  // Every inspection, newest first. Sent reports are readable under RLS with
+  // the user's own client; the service-role client only adds visibility into
+  // a draft sitting in review. If it's unavailable (e.g. the runtime secret
+  // is missing on the worker), degrade to the sent view instead of crashing.
+  const INSPECTION_COLUMNS =
+    "id, cycle_number, is_baseline, status, flag_status, generated_report, cayden_note, sent_at, trajectory_read";
+  const { data: ownRows } = await supabase
     .from("inspections")
-    .select(
-      "id, cycle_number, is_baseline, status, flag_status, generated_report, cayden_note, sent_at, trajectory_read",
-    )
+    .select(INSPECTION_COLUMNS)
     .eq("user_id", user.id)
     .order("cycle_number", { ascending: false })
     .limit(20);
-  const all = (inspectionRows ?? []) as InspectionRow[];
+  let all = (ownRows ?? []) as InspectionRow[];
+  try {
+    const admin = createAdminClient();
+    const { data: adminRows, error: adminError } = await admin
+      .from("inspections")
+      .select(INSPECTION_COLUMNS)
+      .eq("user_id", user.id)
+      .order("cycle_number", { ascending: false })
+      .limit(20);
+    if (!adminError && adminRows) all = adminRows as InspectionRow[];
+  } catch (err) {
+    console.error("Inspection page: service-role read unavailable", err);
+  }
   const latest = all[0] as InspectionRow | undefined;
   const sentReports = all.filter((i) => i.status === "sent" && i.generated_report);
 
