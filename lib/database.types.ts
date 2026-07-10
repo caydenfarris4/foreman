@@ -384,6 +384,15 @@ export interface SessionAttendance {
   created_at: string;
 }
 
+export interface CoachingSession {
+  id: string;
+  user_id: string;
+  kind: "free" | "paid";
+  stripe_payment_intent_id: string | null;
+  amount_paid_cents: number | null;
+  created_at: string;
+}
+
 export type JournalKind = "reflection" | "quote" | "insight";
 
 export interface JournalEntry {
@@ -458,6 +467,7 @@ export interface Database {
       };
       cohort_waitlist: RowOps<CohortWaitlistEntry>;
       office_hours_bookings: RowOps<OfficeHoursBooking>;
+      coaching_sessions: RowOps<CoachingSession>;
       session_attendance: RowOps<SessionAttendance>;
     };
     Views: Record<string, never>;
