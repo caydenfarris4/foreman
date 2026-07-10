@@ -42,6 +42,7 @@ export async function addHabit(input: unknown): Promise<Result> {
   });
   if (error) return { ok: false, error: "Could not add the habit." };
 
+  revalidatePath("/app");
   revalidatePath("/app/checkin");
   return { ok: true };
 }
@@ -59,6 +60,7 @@ export async function archiveHabit(input: unknown): Promise<Result> {
     .eq("user_id", userId);
   if (error) return { ok: false, error: "Could not remove the habit." };
 
+  revalidatePath("/app");
   revalidatePath("/app/checkin");
   return { ok: true };
 }
@@ -103,6 +105,7 @@ export async function setHabitChecked(input: unknown): Promise<Result> {
     if (error) return { ok: false, error: "Could not uncheck it." };
   }
 
+  revalidatePath("/app");
   revalidatePath("/app/checkin");
   return { ok: true };
 }
