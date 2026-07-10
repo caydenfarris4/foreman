@@ -12,6 +12,10 @@ const EntrySchema = z.object({
   body: z.string().trim().min(3).max(8000),
   prompt_text: z.string().trim().max(500).nullable().optional(),
   tag: z.string().trim().max(40).nullable().optional(),
+  // reflection = free writing; quote = kept from reading (source = book/
+  // author); insight = a key point saved from a coaching response.
+  kind: z.enum(["reflection", "quote", "insight"]).optional(),
+  source: z.string().trim().max(120).nullable().optional(),
 });
 
 export async function saveJournalEntry(input: unknown): Promise<Result> {
@@ -40,8 +44,10 @@ export async function saveJournalEntry(input: unknown): Promise<Result> {
     body: parsed.data.body,
     prompt_text: parsed.data.prompt_text ?? null,
     tag: parsed.data.tag ?? null,
+    kind: parsed.data.kind ?? "reflection",
+    source: parsed.data.source ?? null,
   });
-  if (error) return { ok: false, error: "Could not save your reflection." };
+  if (error) return { ok: false, error: "Could not save it. Try again." };
 
   revalidatePath("/app/journal");
   return { ok: true };
