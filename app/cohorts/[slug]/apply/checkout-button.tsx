@@ -3,14 +3,14 @@
 import { useState, useTransition } from "react";
 import { Button, Spinner } from "@/components/ui/button";
 
-export function CheckoutButton({ cohortId }: { cohortId: string }) {
+export function CheckoutButton({ cohortSlug }: { cohortSlug: string }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function start() {
     setError(null);
     startTransition(async () => {
-      const res = await fetch(`/api/cohorts/${cohortId}/checkout`, {
+      const res = await fetch(`/api/cohorts/${cohortSlug}/checkout`, {
         method: "POST",
       });
       const json = await res.json().catch(() => ({}));

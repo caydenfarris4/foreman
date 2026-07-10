@@ -179,7 +179,7 @@ function ExistingState({
       {body ? <p className="type-body mt-2 text-ink2">{body}</p> : null}
       {status === "accepted" ? (
         <div className="mt-4">
-          <CheckoutButton cohortId={cohortId} />
+          <CheckoutButton cohortSlug={cohortSlug} />
         </div>
       ) : null}
       <p className="type-caption mt-4 text-graphite">
