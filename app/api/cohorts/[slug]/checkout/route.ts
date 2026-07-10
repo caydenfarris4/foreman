@@ -3,8 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe";
 import { enforceRateLimit } from "@/lib/rate-limit";
-import { isUuid } from "@/lib/validation";
-import { stripePriceIdForUser } from "@/lib/cohorts";
+
+import { isValidSlug, stripePriceIdForUser } from "@/lib/cohorts";
 import type {
   Cohort,
   CohortParticipant,
@@ -15,13 +15,13 @@ export const runtime = "nodejs";
 
 export async function POST(
   request: NextRequest,
-  ctx: { params: Promise<{ id: string }> },
+  ctx: { params: Promise<{ slug: string }> },
 ) {
   const limited = await enforceRateLimit(request, "cohort-checkout");
   if (limited) return limited;
 
-  const { id } = await ctx.params;
-  if (!isUuid(id)) {
+  const { slug } = await ctx.params;
+  if (!isValidSlug(slug)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -39,7 +39,7 @@ export async function POST(
     .select(
       "id, name, slug, status, stripe_price_id_standard, stripe_price_id_subscriber",
     )
-    .eq("id", id)
+    .eq("slug", slug)
     .maybeSingle();
   const cohort = cohortRow as Pick<
     Cohort,
