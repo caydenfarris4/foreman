@@ -26,7 +26,7 @@ ${promptText}
 
 Five minutes. One question. Then coaching back.
 
-Open the check-in: ${appUrl}/app/checkin
+Open the check-in: ${appUrl}/app
 
 —
 Foreman
@@ -88,7 +88,7 @@ export function dailyPromptHtml({
             </tr>
             <tr>
               <td style="padding:28px 28px 8px;">
-                <a href="${escapeHtml(appUrl)}/app/checkin" style="display:inline-block;background:#3a352e;color:#fdfcf8;font-size:15px;font-weight:500;padding:12px 20px;border-radius:8px;text-decoration:none;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">Open the check-in</a>
+                <a href="${escapeHtml(appUrl)}/app" style="display:inline-block;background:#3a352e;color:#fdfcf8;font-size:15px;font-weight:500;padding:12px 20px;border-radius:8px;text-decoration:none;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">Open the check-in</a>
               </td>
             </tr>
             <tr>

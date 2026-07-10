@@ -29,7 +29,7 @@ ${promptText}
 
 There is nothing to submit and nothing to finish. Let it breathe, and carry what it surfaces into the people and the purpose you are part of.
 
-Open your reflection: ${appUrl}/app/checkin
+Open your reflection: ${appUrl}/app
 
 -
 Foreman
@@ -95,7 +95,7 @@ export function reflectionPromptHtml({
             </tr>
             <tr>
               <td style="padding:12px 28px 8px;">
-                <a href="${escapeHtml(appUrl)}/app/checkin" style="display:inline-block;background:#3a352e;color:#fdfcf8;font-size:15px;font-weight:500;padding:12px 20px;border-radius:8px;text-decoration:none;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">Open your reflection</a>
+                <a href="${escapeHtml(appUrl)}/app" style="display:inline-block;background:#3a352e;color:#fdfcf8;font-size:15px;font-weight:500;padding:12px 20px;border-radius:8px;text-decoration:none;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">Open your reflection</a>
               </td>
             </tr>
             <tr>

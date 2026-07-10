@@ -17,10 +17,14 @@ import {
 } from "@/lib/utils";
 import type {
   DailyCheckin,
+  DailyHabit,
   FrameworkPhase,
+  HabitCheck,
   Profile,
   Situation,
 } from "@/lib/database.types";
+import { CheckinForm } from "./checkin/checkin-form";
+import { HabitChecklist } from "./checkin/habit-checklist";
 
 function ArrowIcon({ size = 16 }: { size?: number }) {
   return (
@@ -111,13 +115,32 @@ export default async function DashboardPage({
   const weekday = weekdayInTimezone(profile.timezone);
   const onSabbath = profile.sabbath_day === weekday;
 
-  const { data: todayRow } = await supabase
-    .from("daily_checkins")
-    .select("*")
-    .eq("user_id", user.id)
-    .eq("checkin_date", today)
-    .maybeSingle();
+  const [{ data: todayRow }, { data: habitsData }, { data: checksData }] =
+    await Promise.all([
+      supabase
+        .from("daily_checkins")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("checkin_date", today)
+        .maybeSingle(),
+      supabase
+        .from("daily_habits")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("active", true)
+        .order("sort", { ascending: true })
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("habit_checks")
+        .select("habit_id")
+        .eq("user_id", user.id)
+        .eq("check_date", today),
+    ]);
   const todayCheckin = todayRow as DailyCheckin | null;
+  const habits = (habitsData ?? []) as DailyHabit[];
+  const checkedIds = ((checksData ?? []) as Pick<HabitCheck, "habit_id">[]).map(
+    (c) => c.habit_id,
+  );
 
   const { data: monthCheckinsData } = await supabase
     .from("daily_checkins")
@@ -209,9 +232,7 @@ export default async function DashboardPage({
     .toUpperCase();
 
   const checkinDone = !!todayCheckin?.completed_at;
-  // Today's prompt now lives on the check-in page itself; the hero card stays
-  // visual (photo + one line), per the Cornerstone home screen.
-  void todaysPrompt;
+  const promptText = todayCheckin?.prompt_text ?? todaysPrompt;
 
   return (
     <div className="space-y-4 px-1 pt-4">
@@ -251,6 +272,11 @@ export default async function DashboardPage({
         </Reveal>
       ) : null}
 
+      {/* Daily habits — right here on Home, check and move on. */}
+      <div className="mx-3">
+        <HabitChecklist habits={habits} checkedIds={checkedIds} today={today} />
+      </div>
+
       {onSabbath ? (
         <Card className="mx-3 p-5">
           <p className="type-cap text-oak-dim">
@@ -258,53 +284,59 @@ export default async function DashboardPage({
           </p>
           <h2 className="type-h2 mt-2 text-ink">A day set apart.</h2>
           <p className="type-body mt-2 text-graphite">
-            Not a pause. A day for reflection, faith, and growth. A chance to
-            step back into something bigger than the work.
+            No check-in today. A day for reflection, faith, and growth — a
+            chance to step back into something bigger than the work.
           </p>
           <p className="type-prompt mt-4 text-ink">
             {reflectionForDay(today, user.id)}
           </p>
-          <div className="mt-4">
-            <Button asChild size="md">
-              <Link href="/app/checkin">
-                Open reflection
-                <ArrowIcon />
-              </Link>
-            </Button>
-          </div>
         </Card>
       ) : (
-        /* Morning check-in hero — the Cornerstone house photo card. */
-        <Link
-          href="/app/checkin"
-          className="group relative mx-3 block overflow-hidden rounded-xl shadow-lift"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/house-hero.png"
-            alt=""
-            className="h-52 w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[oklch(0.22_0.02_55/0.82)] via-[oklch(0.25_0.02_55/0.28)] to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
-            <div>
-              <p className="type-cap text-[#e6b25a]">
-                TODAY&apos;S FOCUS{checkinDone ? " · FILED" : ""}
-              </p>
-              <p className="type-h2 mt-1 text-[oklch(0.98_0.01_80)]">
-                Morning check-in
-              </p>
-              <p className="type-caption mt-0.5 text-[oklch(0.98_0.01_80/0.7)]">
-                {checkinDone
-                  ? "Done — your coaching is inside."
-                  : "2 min · under construction, every day"}
-              </p>
+        <>
+          {/* Morning check-in hero — scrolls to the check-in right below. */}
+          <a
+            href="#daily-checkin"
+            className="group relative mx-3 block overflow-hidden rounded-xl shadow-lift"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/house-hero.png"
+              alt=""
+              className="h-52 w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[oklch(0.22_0.02_55/0.82)] via-[oklch(0.25_0.02_55/0.28)] to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
+              <div>
+                <p className="type-cap text-[#e6b25a]">
+                  TODAY&apos;S FOCUS{checkinDone ? " · FILED" : ""}
+                </p>
+                <p className="type-h2 mt-1 text-[oklch(0.98_0.01_80)]">
+                  Morning check-in
+                </p>
+                <p className="type-caption mt-0.5 text-[oklch(0.98_0.01_80/0.7)]">
+                  {checkinDone
+                    ? "Done — your coaching is below."
+                    : "2 min · under construction, every day"}
+                </p>
+              </div>
+              <span className="mb-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[oklch(0.98_0.01_80)] text-ink transition-transform group-hover:translate-y-0.5">
+                <ArrowIcon size={16} />
+              </span>
             </div>
-            <span className="mb-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[oklch(0.98_0.01_80)] text-ink transition-transform group-hover:translate-x-0.5">
-              <ArrowIcon size={16} />
-            </span>
-          </div>
-        </Link>
+          </a>
+
+          {/* The daily check-in itself — moved home from the Coach tab. */}
+          <section id="daily-checkin" className="scroll-mt-16">
+            <CheckinForm
+              checkinDate={today}
+              promptText={promptText}
+              existingResponse={todayCheckin?.user_response ?? null}
+              existingCoaching={todayCheckin?.ai_coaching ?? null}
+              existingPhase={todayCheckin?.framework_phase ?? null}
+              existingTags={todayCheckin?.tags ?? null}
+            />
+          </section>
+        </>
       )}
 
       {isRetroDay && !retroDone ? (
