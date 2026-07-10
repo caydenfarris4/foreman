@@ -42,6 +42,34 @@ The Growth Inspection is now functional end to end: plan → cascade → check-i
 → inspection instrument → scoring → governed report → auto-clear or review →
 the report feeding back into coaching. UI/UX polish is a separate pass.
 
+### Stage 9 shipped — cadence, growth record, delivery
+
+- **Firm six-month cycle** (`lib/inspection/evidence.ts`): a sent report locks
+  the next walk-through for 182 days (`isInspectionDue`), enforced server-side
+  in `/api/inspection/submit` (409 with the days remaining) and mirrored in the
+  `/app/inspection` UI as a countdown card. A baseline is available immediately.
+- **Growth record** (`buildGrowthEvidence`): the submit route gathers the
+  user's actual window — completed daily check-ins, boards/weekly/monthly goals
+  done, retros filed, journal reflections/quotes/insights, habit checks,
+  situation titles — and (a) injects it into the report prompt so the report
+  walks their logged work back to them ("no data, no claim" still holds), and
+  (b) freezes the counts as `growth_stats` inside the `trajectory_read` jsonb
+  for the report page's "THE RECORD" strip.
+- **Report page UX** (`/app/inspection`): trajectory chip (narrowing / steady /
+  widening / baseline), record strip, Cayden's note styled as a personal note,
+  past walk-throughs as a collapsible history, and the instrument only when the
+  cycle is due.
+- **Delivery = notify email → read in app** (`lib/emails/inspection.ts`):
+  "Your site report is in" fires on auto-clear (submit route) and on admin
+  approval (`approveInspection`, notes `hasNote`). Reports never live in email.
+- **Daily cron** (`GET /api/cron/inspection`, `Bearer ${CRON_SECRET}`): sends
+  the "Time to walk the site" invite the day a user's cycle unlocks (24h
+  window — run the cron daily), and nudges every admin while any routed report
+  sits `pending` in the review queue (routed reports never auto-release).
+- Home surfaces the walk-through the day it unlocks; the baseline card waits
+  until the user has at least five logged situations so nobody inspects an
+  empty site.
+
 ### Stage 3 shipped
 
 - `/app/plan/checkin` — daily/weekly/monthly cascade check-ins: mark the

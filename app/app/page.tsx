@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { promptForDay } from "@/lib/prompts/daily";
 import { reflectionForDay } from "@/lib/prompts/reflection";
 import { stuckAcrossTwo } from "@/lib/inspection/context";
+import { isInspectionDue } from "@/lib/inspection/evidence";
 import { principleByKey } from "@/lib/inspection/principles";
 import type { TrajectoryRead } from "@/lib/inspection/scoring";
 import {
@@ -227,18 +228,29 @@ export default async function DashboardPage({
   // "needs a human" signal.
   const { data: recentInspections } = await supabase
     .from("inspections")
-    .select("trajectory_read, cycle_number")
+    .select("trajectory_read, cycle_number, sent_at")
     .eq("user_id", user.id)
     .not("sent_at", "is", null)
     .order("cycle_number", { ascending: false })
     .limit(2);
   const insp = (recentInspections ?? []) as {
     trajectory_read: TrajectoryRead | null;
+    sent_at: string | null;
   }[];
   const stuckPrinciples = stuckAcrossTwo(
     insp[0]?.trajectory_read ?? null,
     insp[1]?.trajectory_read ?? null,
   ).map((p) => principleByKey(p).name);
+
+  // Firm six-month cycle: surface the walk-through the day it unlocks. The
+  // baseline invite waits until there's a record worth reading (a few logged
+  // sessions), so a brand-new user isn't inspected on an empty site.
+  const lastInspectionSentAt = insp[0]?.sent_at ?? null;
+  const inspectionDue =
+    hasPlan &&
+    (lastInspectionSentAt
+      ? isInspectionDue(lastInspectionSentAt)
+      : totalSituations >= 5);
 
   const { logged, daysInMonth, dayOfMonth } = siteDaysThisMonth(
     monthCheckins,
@@ -383,6 +395,34 @@ export default async function DashboardPage({
             <Button asChild size="md">
               <Link href="/app/retro">
                 Open retro
+                <ArrowIcon />
+              </Link>
+            </Button>
+          </div>
+        </Card>
+      ) : null}
+
+      {inspectionDue ? (
+        <Card className="mx-3 p-5">
+          <p className="type-cap text-oak-dim">
+            {lastInspectionSentAt
+              ? "SIX MONTHS ON THE BOOKS"
+              : "YOUR FIRST INSPECTION"}
+          </p>
+          <h3 className="type-h2 mt-2 text-ink">
+            {lastInspectionSentAt
+              ? "Time to walk the site."
+              : "Set your baseline."}
+          </h3>
+          <p className="type-body mt-2 text-graphite">
+            {lastInspectionSentAt
+              ? "Your six-month inspection is open. The report walks your record back to you: what moved, what held, and where you're pointed."
+              : "You've logged enough work for a first walk-through. Ten minutes, and every future report measures against it."}
+          </p>
+          <div className="mt-4">
+            <Button asChild size="md">
+              <Link href="/app/inspection">
+                Walk the site
                 <ArrowIcon />
               </Link>
             </Button>
