@@ -7,6 +7,7 @@ import { inspectionContextLine } from "@/lib/inspection/context";
 import { recordedKnowledgeBlock } from "@/lib/journal-context";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { accessFor, canUseAi } from "@/lib/billing";
+import { hasActiveCohortAccess } from "@/lib/cohorts";
 import type { JournalEntry } from "@/lib/database.types";
 import type { TrajectoryRead } from "@/lib/inspection/scoring";
 
@@ -75,7 +76,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });
   }
   if (!canUseAi(accessFor(profile))) {
-    return NextResponse.json({ error: "Subscription required" }, { status: 402 });
+    // Cohort participants keep AI access through their free window.
+    const cohortBypass = await hasActiveCohortAccess(supabase, user.id);
+    if (!cohortBypass) {
+      return NextResponse.json(
+        { error: "Subscription required" },
+        { status: 402 },
+      );
+    }
   }
 
   // Same grounding as the daily coaching: latest sent inspection + the user's

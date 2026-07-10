@@ -47,6 +47,108 @@ export interface Profile {
   created_at: string;
 }
 
+export type CohortStatus =
+  | "draft"
+  | "open"
+  | "full"
+  | "in_progress"
+  | "completed"
+  | "archived";
+
+export type ParticipantStatus =
+  | "applied"
+  | "accepted"
+  | "rejected"
+  | "paid"
+  | "enrolled"
+  | "completed"
+  | "withdrew";
+
+export interface Cohort {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  start_date: string;
+  end_date: string;
+  capacity: number;
+  price_cents: number;
+  subscriber_discount_cents: number | null;
+  status: CohortStatus;
+  stripe_product_id: string | null;
+  stripe_price_id_standard: string | null;
+  stripe_price_id_subscriber: string | null;
+  hero_quote: string | null;
+  curriculum_summary: string | null;
+  created_at: string;
+}
+
+export interface Mentor {
+  id: string;
+  name: string;
+  title: string | null;
+  company: string | null;
+  bio: string | null;
+  photo_url: string | null;
+  email: string | null;
+  linkedin_url: string | null;
+  expertise_areas: string[];
+  rate_per_session_cents: number | null;
+  values_aligned: boolean;
+  active: boolean;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface CohortSession {
+  id: string;
+  cohort_id: string;
+  session_number: number;
+  title: string;
+  framework_phase: FrameworkPhase | null;
+  description: string | null;
+  scheduled_at: string;
+  duration_minutes: number | null;
+  meeting_url: string | null;
+  guest_mentor_id: string | null;
+  prep_materials: string | null;
+  recording_url: string | null;
+  facilitator_notes: string | null;
+  created_at: string;
+}
+
+export interface CohortParticipant {
+  id: string;
+  cohort_id: string;
+  user_id: string;
+  application_text: string;
+  why_joining: string | null;
+  current_team_size: number | null;
+  current_challenge: string | null;
+  agreed_to_commitment: boolean;
+  status: ParticipantStatus;
+  stripe_payment_intent_id: string | null;
+  amount_paid_cents: number | null;
+  applied_at: string;
+  accepted_at: string | null;
+  enrolled_at: string | null;
+  completed_at: string | null;
+  withdrew_at: string | null;
+  testimonial: string | null;
+  testimonial_approved: boolean;
+  free_app_access_until: string | null;
+}
+
+export interface CohortWaitlistEntry {
+  id: string;
+  cohort_id: string;
+  email: string;
+  name: string | null;
+  notified: boolean;
+  notified_at: string | null;
+  created_at: string;
+}
+
 export interface DailyCheckin {
   id: string;
   user_id: string;
@@ -251,6 +353,37 @@ export interface ReviewQueueItem {
   resolved_at: string | null;
 }
 
+export type OfficeHoursStatus =
+  | "scheduled"
+  | "completed"
+  | "no_show"
+  | "rescheduled"
+  | "cancelled";
+
+export interface OfficeHoursBooking {
+  id: string;
+  cohort_id: string;
+  participant_id: string;
+  mentor_id: string;
+  scheduled_at: string;
+  duration_minutes: number | null;
+  meeting_url: string | null;
+  status: OfficeHoursStatus;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface SessionAttendance {
+  id: string;
+  session_id: string;
+  participant_id: string;
+  attended: boolean;
+  joined_at: string | null;
+  left_at: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
 export type JournalKind = "reflection" | "quote" | "insight";
 
 export interface JournalEntry {
@@ -313,6 +446,19 @@ export interface Database {
       journal_entries: RowOps<JournalEntry>;
       daily_habits: RowOps<DailyHabit>;
       habit_checks: RowOps<HabitCheck>;
+      cohorts: RowOps<Cohort>;
+      mentors: RowOps<Mentor>;
+      cohort_sessions: RowOps<CohortSession>;
+      cohort_participants: {
+        Row: CohortParticipant;
+        Insert: Omit<CohortParticipant, "id" | "applied_at"> &
+          Partial<Pick<CohortParticipant, "id" | "applied_at">>;
+        Update: Partial<CohortParticipant>;
+        Relationships: [];
+      };
+      cohort_waitlist: RowOps<CohortWaitlistEntry>;
+      office_hours_bookings: RowOps<OfficeHoursBooking>;
+      session_attendance: RowOps<SessionAttendance>;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

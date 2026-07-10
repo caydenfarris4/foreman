@@ -10,6 +10,7 @@ import {
 import { buildRetroSystemPrompt } from "@/lib/prompts";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { accessFor, canUseAi } from "@/lib/billing";
+import { hasActiveCohortAccess } from "@/lib/cohorts";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -79,10 +80,14 @@ export async function POST(request: NextRequest) {
   // Mirror the UI paywall on the server. Same reasoning as the
   // check-in route — Claude calls cost money.
   if (!canUseAi(accessFor(profile))) {
-    return NextResponse.json(
-      { error: "Subscription required" },
-      { status: 402 },
-    );
+    // Cohort participants keep AI access through their free window.
+    const cohortBypass = await hasActiveCohortAccess(supabase, user.id);
+    if (!cohortBypass) {
+      return NextResponse.json(
+        { error: "Subscription required" },
+        { status: 402 },
+      );
+    }
   }
 
   const { data: existing } = await supabase

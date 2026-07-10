@@ -50,3 +50,13 @@ jobs:
             cat "${headers}"
             exit 1
           fi
+
+      - name: Trigger Foreman cohort-status transitions
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          curl --silent --show-error --fail-with-body \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/cron/cohort-status" || echo "::warning::cohort-status cron failed"

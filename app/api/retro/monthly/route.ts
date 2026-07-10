@@ -9,6 +9,7 @@ import {
 import { buildMonthlySystemPrompt } from "@/lib/prompts";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { accessFor, canUseAi } from "@/lib/billing";
+import { hasActiveCohortAccess } from "@/lib/cohorts";
 import type { Profile, WeeklyRetro } from "@/lib/database.types";
 
 export const runtime = "nodejs";
@@ -55,10 +56,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });
   }
   if (!canUseAi(accessFor(profile))) {
-    return NextResponse.json(
-      { error: "Subscription required" },
-      { status: 402 },
-    );
+    // Cohort participants keep AI access through their free window.
+    const cohortBypass = await hasActiveCohortAccess(supabase, user.id);
+    if (!cohortBypass) {
+      return NextResponse.json(
+        { error: "Subscription required" },
+        { status: 402 },
+      );
+    }
   }
 
   // Reuse cached synthesis if we have it.

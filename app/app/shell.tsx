@@ -105,6 +105,7 @@ export function AppShell({
               pathname.startsWith("/app/inspection")
             ? "plan"
             : pathname.startsWith("/app/you") ||
+                pathname.startsWith("/app/cohort") ||
                 pathname.startsWith("/app/settings") ||
                 pathname.startsWith("/app/library") ||
                 pathname.startsWith("/app/retro")
