@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, Spinner } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -190,7 +191,14 @@ export function CheckinForm({
           <SaveToJournal coaching={coaching} promptText={promptText} />
 
           <p className="type-caption text-center text-graphite">
-            Saved to your library. Come back tomorrow.
+            Saved to{" "}
+            <Link
+              href="/app/library"
+              className="text-ink2 underline underline-offset-2 hover:text-ink"
+            >
+              your library
+            </Link>
+            . Come back tomorrow.
           </p>
         </>
       ) : (

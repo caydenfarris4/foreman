@@ -50,6 +50,13 @@ async function login(formData: FormData) {
   );
 }
 
+async function switchAccount() {
+  "use server";
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
+}
+
 export default async function LoginPage({
   searchParams,
 }: {
@@ -62,6 +69,59 @@ export default async function LoginPage({
   const params = await searchParams;
   const showConfirmNotice = params.notice === "confirm";
   const emailHint = safeEmailHint(params.email);
+
+  // Already signed in on this device? Sessions persist like any social app,
+  // but whose session it is stays explicit: continue as that account or
+  // switch — never a silent redirect into it.
+  const supabase = await createClient();
+  const {
+    data: { user: sessionUser },
+  } = await supabase.auth.getUser();
+  if (sessionUser) {
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("name, email, onboarded_at")
+      .eq("id", sessionUser.id)
+      .maybeSingle();
+    const profile = profileRow as {
+      name: string | null;
+      email: string | null;
+      onboarded_at: string | null;
+    } | null;
+    const who = profile?.name || profile?.email || sessionUser.email || "your account";
+    const destination = profile?.onboarded_at ? "/app" : "/onboarding";
+
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-paper px-6 py-12">
+        <div className="w-full max-w-sm">
+          <div className="mb-10 flex justify-center">
+            <Wordmark />
+          </div>
+          <div className="mb-2 h-[2px] w-7 bg-oak" />
+          <p className="type-cap text-oak-dim">ALREADY ON SITE</p>
+          <h1 className="type-h1 mt-2 text-ink">Welcome back.</h1>
+          <p className="type-body mt-3 text-graphite">
+            You&apos;re signed in on this device as{" "}
+            <span className="font-medium text-ink">{who}</span>.
+          </p>
+          <div className="mt-8 space-y-3">
+            <Button asChild full size="lg">
+              <Link href={destination}>Continue as {who}</Link>
+            </Button>
+            <form action={switchAccount}>
+              <Button type="submit" variant="secondary" full size="lg">
+                Use a different account
+              </Button>
+            </form>
+          </div>
+          <p className="type-caption mt-6 text-center text-graphite">
+            Switching signs this device out first, then brings you back here to
+            log in.
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-paper px-6 py-12">
