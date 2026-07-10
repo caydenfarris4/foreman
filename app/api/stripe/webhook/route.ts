@@ -65,6 +65,12 @@ export async function POST(request: NextRequest) {
           break;
         }
 
+        // ---------- 1:1 coaching session purchase -----------------------
+        if (type === "coaching") {
+          await handleCoachingCheckout(admin, session);
+          break;
+        }
+
         // ---------- Subscription (existing flow) ------------------------
         const userId =
           (session.metadata?.user_id as string | undefined) ??
@@ -271,5 +277,30 @@ async function handleCohortCheckout(
     } catch (err) {
       console.error("Cohort welcome email failed", err);
     }
+  }
+}
+
+// Paid 1:1 coaching session: grant one credit to the purchasing user.
+async function handleCoachingCheckout(
+  admin: ReturnType<typeof createAdminClient>,
+  session: Stripe.Checkout.Session,
+) {
+  const userId = session.metadata?.user_id as string | undefined;
+  if (!userId) {
+    console.error("Coaching checkout missing user_id", session.id);
+    return;
+  }
+  const paymentIntentId =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id ?? null;
+  const { error } = await admin.from("coaching_sessions").insert({
+    user_id: userId,
+    kind: "paid",
+    stripe_payment_intent_id: paymentIntentId,
+    amount_paid_cents: session.amount_total ?? null,
+  });
+  if (error) {
+    console.error("Coaching credit insert failed", error.message);
   }
 }
