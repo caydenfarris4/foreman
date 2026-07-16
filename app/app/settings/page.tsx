@@ -5,6 +5,7 @@ import { accessFor } from "@/lib/billing";
 import { PRICING } from "@/lib/stripe";
 import type { Profile } from "@/lib/database.types";
 import { SettingsForm } from "./settings-form";
+import { DeleteAccountForm } from "./delete-account-form";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -130,6 +131,10 @@ export default async function SettingsPage() {
           <Row label="Current phase" value={profile.current_phase} />
         </dl>
       </div>
+
+      <DeleteAccountForm
+        hasActiveSubscription={profile.subscription_status === "active"}
+      />
     </div>
   );
 }

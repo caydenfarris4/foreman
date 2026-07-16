@@ -73,7 +73,9 @@ type: App, free). Then work through the **Set up your app** checklist:
   *This page doesn't exist yet — it's the one real content task left.*
 - **Data safety form:** declare collection of email address (account),
   user-generated content (check-ins/situations), and purchase history
-  (Stripe). All encrypted in transit; account deletion available.
+  (Stripe). All encrypted in transit; account deletion available — use
+  `https://foreman.coach/delete-account` as the deletion URL (the in-app
+  flow lives in Settings → Danger zone).
 - **Content rating questionnaire:** Foreman is a productivity/self-help
   app with no objectionable content — comes out "Everyone".
 - **Ads:** none. **Target audience:** 18+.
