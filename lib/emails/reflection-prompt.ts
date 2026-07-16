@@ -7,6 +7,8 @@ interface ReflectionPromptInput {
   name: string | null;
   promptText: string;
   appUrl: string;
+  /** Tokenized pause link (lib/emails/unsubscribe.ts); null when CRON_SECRET is unset. */
+  unsubscribeUrl?: string | null;
 }
 
 export function reflectionPromptSubject(): string {
@@ -17,6 +19,7 @@ export function reflectionPromptText({
   name,
   promptText,
   appUrl,
+  unsubscribeUrl,
 }: ReflectionPromptInput): string {
   const greeting = name ? `${name},` : "Today,";
   return `${greeting}
@@ -37,12 +40,13 @@ Built from the job site, not the penthouse.
 
 You're getting this because you set a sabbath day in Foreman. Change it in Settings.
 ${appUrl}/app/settings
-`;
+${unsubscribeUrl ? `\nStop these emails: ${unsubscribeUrl}\n` : ""}`;
 }
 
 export function reflectionPromptHtml({
   name,
   promptText,
+  unsubscribeUrl,
   appUrl,
 }: ReflectionPromptInput): string {
   const greeting = name ? `${escapeHtml(name)},` : "Today,";
@@ -103,7 +107,11 @@ export function reflectionPromptHtml({
                 <p style="margin:0 0 6px;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:11px;color:#7a6a55;">Built from the job site, not the penthouse.</p>
                 <p style="margin:0;font-size:12px;color:#7a6a55;line-height:1.5;">
                   You're getting this because you set a sabbath day in Foreman.
-                  <a href="${escapeHtml(appUrl)}/app/settings" style="color:#3A342C;text-decoration:underline;">Change it</a>.
+                  <a href="${escapeHtml(appUrl)}/app/settings" style="color:#3A342C;text-decoration:underline;">Change it</a>.${
+                    unsubscribeUrl
+                      ? ` <a href="${escapeHtml(unsubscribeUrl)}" style="color:#7a6a55;text-decoration:underline;">Stop these emails</a>.`
+                      : ""
+                  }
                 </p>
               </td>
             </tr>

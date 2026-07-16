@@ -28,6 +28,7 @@ export interface SettingsFormValues {
   /** HH:MM */
   notification_time: string;
   timezone: string;
+  emails_paused: boolean;
 }
 
 export function SettingsForm({ initial }: { initial: SettingsFormValues }) {
@@ -177,6 +178,24 @@ export function SettingsForm({ initial }: { initial: SettingsFormValues }) {
             )}
           </label>
         </div>
+
+        <label className="flex items-start gap-3 rounded-lg border border-rule bg-paper p-3.5">
+          <input
+            type="checkbox"
+            checked={values.emails_paused}
+            onChange={(e) => set("emails_paused", e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-[#b26a45]"
+          />
+          <span>
+            <span className="type-spec block text-ink">
+              Pause coaching emails
+            </span>
+            <span className="type-caption mt-0.5 block text-graphite">
+              Stops the daily prompt, sabbath reflection, weekly retro, and
+              inspection emails. Account and receipt emails still arrive.
+            </span>
+          </span>
+        </label>
       </div>
 
       <div className="mt-5 flex items-center gap-3">

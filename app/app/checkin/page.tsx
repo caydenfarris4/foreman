@@ -12,7 +12,7 @@ import { BookingCard } from "./booking-card";
 // Scheduling link (Calendly etc.); falls back to email.
 const BOOKING_URL =
   process.env.NEXT_PUBLIC_BOOKING_URL ??
-  "mailto:cayden.farris03@gmail.com?subject=Coaching%20session";
+  "mailto:cfarriscoaching@gmail.com?subject=Coaching%20session";
 
 export default async function CoachPage({
   searchParams,

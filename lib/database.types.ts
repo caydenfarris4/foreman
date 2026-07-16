@@ -44,6 +44,7 @@ export interface Profile {
   subscription_current_period_end: string | null;
   trial_ends_at: string;
   is_admin: boolean;
+  emails_paused: boolean;
   created_at: string;
 }
 

@@ -50,8 +50,8 @@ export default function DeleteAccountPage() {
 
       <p className="type-body mt-8 text-graphite">
         Can&rsquo;t sign in? Email{" "}
-        <a href="mailto:cayden.farris03@gmail.com?subject=Account%20deletion%20request">
-          cayden.farris03@gmail.com
+        <a href="mailto:cfarriscoaching@gmail.com?subject=Account%20deletion%20request">
+          cfarriscoaching@gmail.com
         </a>{" "}
         from the address on your account and we&rsquo;ll delete it for you
         within 30 days.

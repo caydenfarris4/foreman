@@ -12,6 +12,10 @@ import {
   reflectionPromptSubject,
   reflectionPromptText,
 } from "@/lib/emails/reflection-prompt";
+import {
+  listUnsubscribeHeaders,
+  unsubscribeUrl,
+} from "@/lib/emails/unsubscribe";
 import { promptForDay } from "@/lib/prompts/daily";
 import { reflectionForDay } from "@/lib/prompts/reflection";
 import type { FrameworkPhase, Profile } from "@/lib/database.types";
@@ -87,10 +91,11 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, email, name, current_phase, sabbath_day, notification_time, timezone, subscription_status, onboarded_at",
+      "id, email, name, current_phase, sabbath_day, notification_time, timezone, subscription_status, onboarded_at, emails_paused",
     )
     .not("onboarded_at", "is", null)
     .in("subscription_status", ["trial", "active"])
+    .eq("emails_paused", false)
     .limit(10_000);
 
   if (error) {
@@ -109,6 +114,7 @@ export async function GET(request: NextRequest) {
     | "timezone"
     | "subscription_status"
     | "onboarded_at"
+    | "emails_paused"
   >[];
 
   let attempted = 0;
@@ -130,6 +136,8 @@ export async function GET(request: NextRequest) {
     // reflection is contemplative, not a managerial check-in — so it stays out
     // of streaks, the library, and the weekly retro. Idempotency relies on the
     // hourly cadence, the same as the coaching path does in practice.
+    const unsubUrl = unsubscribeUrl(appUrl, p.id);
+
     if (p.sabbath_day === weekdayInTz(p.timezone, now)) {
       const reflectionPrompt = reflectionForDay(today, p.id);
       try {
@@ -142,12 +150,15 @@ export async function GET(request: NextRequest) {
             name: p.name,
             promptText: reflectionPrompt,
             appUrl,
+            unsubscribeUrl: unsubUrl,
           }),
           html: reflectionPromptHtml({
             name: p.name,
             promptText: reflectionPrompt,
             appUrl,
+            unsubscribeUrl: unsubUrl,
           }),
+          headers: listUnsubscribeHeaders(unsubUrl),
         });
         if (result.error) {
           console.error("Cron: Resend reflection error", p.id, result.error);
@@ -225,8 +236,19 @@ export async function GET(request: NextRequest) {
         from: getFromAddress(),
         to: p.email,
         subject: dailyPromptSubject(),
-        text: dailyPromptText({ name: p.name, promptText, appUrl }),
-        html: dailyPromptHtml({ name: p.name, promptText, appUrl }),
+        text: dailyPromptText({
+          name: p.name,
+          promptText,
+          appUrl,
+          unsubscribeUrl: unsubUrl,
+        }),
+        html: dailyPromptHtml({
+          name: p.name,
+          promptText,
+          appUrl,
+          unsubscribeUrl: unsubUrl,
+        }),
+        headers: listUnsubscribeHeaders(unsubUrl),
       });
       if (result.error) {
         console.error("Cron: Resend error", p.id, result.error);

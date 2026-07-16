@@ -8,6 +8,10 @@ import {
   reviewNudgeHtml,
   reviewNudgeSubject,
 } from "@/lib/emails/inspection";
+import {
+  listUnsubscribeHeaders,
+  unsubscribeUrl,
+} from "@/lib/emails/unsubscribe";
 import { inspectionDueAt } from "@/lib/inspection/evidence";
 
 export const runtime = "nodejs";
@@ -85,10 +89,11 @@ export async function GET(request: NextRequest) {
   if (dueUserIds.length) {
     const { data: profileRows } = await admin
       .from("profiles")
-      .select("id, email, name, subscription_status, onboarded_at")
+      .select("id, email, name, subscription_status, onboarded_at, emails_paused")
       .in("id", dueUserIds)
       .not("onboarded_at", "is", null)
-      .in("subscription_status", ["trial", "active"]);
+      .in("subscription_status", ["trial", "active"])
+      .eq("emails_paused", false);
     const profiles = (profileRows ?? []) as {
       id: string;
       email: string;
@@ -96,11 +101,17 @@ export async function GET(request: NextRequest) {
     }[];
     for (const p of profiles) {
       try {
+        const unsubUrl = unsubscribeUrl(appUrl, p.id);
         const result = await getResend().emails.send({
           from: getFromAddress(),
           to: p.email,
           subject: inspectionDueSubject(),
-          html: inspectionDueHtml({ name: p.name, appUrl }),
+          html: inspectionDueHtml({
+            name: p.name,
+            appUrl,
+            unsubscribeUrl: unsubUrl,
+          }),
+          headers: listUnsubscribeHeaders(unsubUrl),
         });
         if (result.error) {
           errors.push({ id: p.id, reason: result.error.message ?? "send failed" });
