@@ -7,6 +7,10 @@ import {
   weeklyRetroSubject,
   weeklyRetroText,
 } from "@/lib/emails/weekly-retro";
+import {
+  listUnsubscribeHeaders,
+  unsubscribeUrl,
+} from "@/lib/emails/unsubscribe";
 import type { Profile } from "@/lib/database.types";
 
 export const runtime = "nodejs";
@@ -80,10 +84,11 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, email, name, retro_day, timezone, subscription_status, onboarded_at",
+      "id, email, name, retro_day, timezone, subscription_status, onboarded_at, emails_paused",
     )
     .not("onboarded_at", "is", null)
     .in("subscription_status", ["trial", "active"])
+    .eq("emails_paused", false)
     .limit(10_000);
 
   if (error) {
@@ -100,6 +105,7 @@ export async function GET(request: NextRequest) {
     | "timezone"
     | "subscription_status"
     | "onboarded_at"
+    | "emails_paused"
   >[];
 
   let attempted = 0;
@@ -135,12 +141,24 @@ export async function GET(request: NextRequest) {
     try {
       const resend = getResend();
       const weekRange = weekRangeLabel(weekStart);
+      const unsubUrl = unsubscribeUrl(appUrl, p.id);
       const result = await resend.emails.send({
         from: getFromAddress(),
         to: p.email,
         subject: weeklyRetroSubject(),
-        text: weeklyRetroText({ name: p.name, appUrl, weekRange }),
-        html: weeklyRetroHtml({ name: p.name, appUrl, weekRange }),
+        text: weeklyRetroText({
+          name: p.name,
+          appUrl,
+          weekRange,
+          unsubscribeUrl: unsubUrl,
+        }),
+        html: weeklyRetroHtml({
+          name: p.name,
+          appUrl,
+          weekRange,
+          unsubscribeUrl: unsubUrl,
+        }),
+        headers: listUnsubscribeHeaders(unsubUrl),
       });
       if (result.error) {
         console.error("Weekly retro: Resend error", p.id, result.error);

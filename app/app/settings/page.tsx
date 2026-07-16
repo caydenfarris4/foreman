@@ -62,6 +62,7 @@ export default async function SettingsPage() {
           retro_day: profile.retro_day,
           notification_time: profile.notification_time?.slice(0, 5) ?? "07:00",
           timezone: profile.timezone,
+          emails_paused: profile.emails_paused,
         }}
       />
 

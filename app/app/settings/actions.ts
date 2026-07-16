@@ -28,6 +28,7 @@ const SettingsSchema = z.object({
   retro_day: z.enum(WEEKDAYS),
   notification_time: z.string().regex(/^\d{2}:\d{2}$/, "Pick a time"),
   timezone: z.string().trim().min(1).max(64),
+  emails_paused: z.boolean(),
 });
 
 export async function updateSettings(input: unknown): Promise<Result> {
@@ -56,6 +57,7 @@ export async function updateSettings(input: unknown): Promise<Result> {
       retro_day: d.retro_day,
       notification_time: d.notification_time + ":00",
       timezone: d.timezone,
+      emails_paused: d.emails_paused,
     })
     .eq("id", user.id);
   if (error) {

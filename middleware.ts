@@ -12,6 +12,6 @@ export const config = {
     // PWA surface (manifest, service worker, offline page, Play Store
     // assetlinks) — all public, and sw.js/.well-known are fetched without
     // cookies anyway.
-    "/((?!_next/static|_next/image|favicon.ico|preview|api/cron|api/stripe/webhook|manifest\\.webmanifest|sw\\.js|offline\\.html|\\.well-known|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|preview|api/cron|api/stripe/webhook|api/email/unsubscribe|manifest\\.webmanifest|sw\\.js|offline\\.html|\\.well-known|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

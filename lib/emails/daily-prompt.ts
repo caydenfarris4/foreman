@@ -6,6 +6,8 @@ interface DailyPromptInput {
   name: string | null;
   promptText: string;
   appUrl: string;
+  /** Tokenized pause link (lib/emails/unsubscribe.ts); null when CRON_SECRET is unset. */
+  unsubscribeUrl?: string | null;
 }
 
 export function dailyPromptSubject(): string {
@@ -16,6 +18,7 @@ export function dailyPromptText({
   name,
   promptText,
   appUrl,
+  unsubscribeUrl,
 }: DailyPromptInput): string {
   const greeting = name ? `Morning, ${name}.` : "Morning.";
   return `${greeting}
@@ -35,13 +38,14 @@ Built from the job site, not the penthouse.
 You're getting this because you set a daily prompt time in Foreman. Update
 your time or pause the cadence in Settings.
 ${appUrl}/app/settings
-`;
+${unsubscribeUrl ? `\nStop these emails: ${unsubscribeUrl}\n` : ""}`;
 }
 
 export function dailyPromptHtml({
   name,
   promptText,
   appUrl,
+  unsubscribeUrl,
 }: DailyPromptInput): string {
   const greeting = name ? `Morning, ${escapeHtml(name)}.` : "Morning.";
   return `<!doctype html>
@@ -101,7 +105,11 @@ export function dailyPromptHtml({
                 <p style="margin:0 0 6px;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:11px;color:#7a6a55;">Built from the job site, not the penthouse.</p>
                 <p style="margin:0;font-size:12px;color:#7a6a55;line-height:1.5;">
                   You're getting this because you set a daily prompt time in Foreman.
-                  <a href="${escapeHtml(appUrl)}/app/settings" style="color:#3A342C;text-decoration:underline;">Change it</a>.
+                  <a href="${escapeHtml(appUrl)}/app/settings" style="color:#3A342C;text-decoration:underline;">Change it</a>.${
+                    unsubscribeUrl
+                      ? ` <a href="${escapeHtml(unsubscribeUrl)}" style="color:#7a6a55;text-decoration:underline;">Stop these emails</a>.`
+                      : ""
+                  }
                 </p>
               </td>
             </tr>
