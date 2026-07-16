@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Offline — Foreman</title>
+    <style>
+      /* Self-contained: this page is served from the service worker cache,
+         so no external fonts or stylesheets. Palette mirrors globals.css. */
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #fefbf7;
+        color: #362b24;
+        font-family: "Hanken Grotesk", -apple-system, system-ui, sans-serif;
+        text-align: center;
+        padding: 24px;
+      }
+      .mark {
+        display: block;
+        margin: 0 auto 20px;
+      }
+      h1 {
+        font-family: Georgia, serif;
+        font-weight: 300;
+        font-size: 28px;
+        letter-spacing: -0.015em;
+        margin: 0 0 12px;
+      }
+      p {
+        font-size: 15px;
+        line-height: 1.5;
+        margin: 0 0 24px;
+        opacity: 0.75;
+      }
+      button {
+        font: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #fefbf7;
+        background: #b26a45;
+        border: 0;
+        border-radius: 6px;
+        padding: 12px 24px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <svg class="mark" width="40" height="40" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path d="M2 2h10v3H5v7H2V2z" fill="#b26a45" />
+      </svg>
+      <h1>You&rsquo;re offline</h1>
+      <p>Foreman needs a connection to load your site. Check your network and try again.</p>
+      <button onclick="location.reload()">Retry</button>
+    </main>
+  </body>
+</html>
