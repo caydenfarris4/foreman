@@ -1,5 +1,18 @@
 # scripts
 
+## generate-pwa-icons.py — app icon set
+
+Regenerates the PWA / Play Store icons (`public/icons/*`, `app/icon.png`)
+from the wordmark glyph in `components/ui/wordmark.tsx`. Only needed when
+the brand mark or palette changes — the generated PNGs are committed.
+
+```bash
+pip install pillow
+python3 scripts/generate-pwa-icons.py
+```
+
+See `docs/PLAY_STORE.md` for how the icons fit into the store pipeline.
+
 ## seed-demo.mjs — full-access demo account
 
 Creates (or refreshes) one demo user for manual testing and fills every feature

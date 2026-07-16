@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Newsreader, Hanken_Grotesk } from "next/font/google";
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import "./globals.css";
 
 // Cornerstone design system: Newsreader (light, literary serif) for display
@@ -24,6 +25,19 @@ export const metadata: Metadata = {
   title: "Foreman — Coaching for first-time managers",
   description:
     "A daily coaching companion built on the Under Construction framework. Foundation, framing, finishing.",
+  applicationName: "Foreman",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Foreman",
+  },
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#fefbf7", // cream — matches globals.css and the PWA manifest
 };
 
 export default function RootLayout({
@@ -35,7 +49,10 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${serif.variable} ${sans.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        {children}
+        <ServiceWorkerRegistration />
+      </body>
     </html>
   );
 }

@@ -7,8 +7,11 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Skip static assets, image optimization, favicon, and the dev-only
-    // /preview routes (no Supabase session — used for UX previews).
-    "/((?!_next/static|_next/image|favicon.ico|preview|api/cron|api/stripe/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Skip static assets, image optimization, favicon, the dev-only
+    // /preview routes (no Supabase session — used for UX previews), and the
+    // PWA surface (manifest, service worker, offline page, Play Store
+    // assetlinks) — all public, and sw.js/.well-known are fetched without
+    // cookies anyway.
+    "/((?!_next/static|_next/image|favicon.ico|preview|api/cron|api/stripe/webhook|manifest\\.webmanifest|sw\\.js|offline\\.html|\\.well-known|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
