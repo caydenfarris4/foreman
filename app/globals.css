@@ -21,6 +21,70 @@
 }
 
 @layer components {
+  /* Long-form legal pages (/terms, /privacy) — generated-HTML prose. */
+  .legal-prose h1 {
+    font-family: var(--font-serif), "Newsreader", Georgia, serif;
+    font-size: 32px;
+    font-weight: 300;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+  }
+  .legal-prose h2 {
+    font-family: var(--font-serif), "Newsreader", Georgia, serif;
+    font-size: 22px;
+    font-weight: 400;
+    line-height: 1.2;
+    margin-top: 2.25rem;
+  }
+  .legal-prose p,
+  .legal-prose li {
+    font-size: 15px;
+    line-height: 1.6;
+    margin-top: 0.75rem;
+  }
+  .legal-prose ul,
+  .legal-prose ol {
+    padding-left: 1.25rem;
+  }
+  .legal-prose ul {
+    list-style: disc;
+  }
+  .legal-prose ol {
+    list-style: decimal;
+  }
+  .legal-prose blockquote {
+    border-left: 2px solid oklch(0.6 0.11 40);
+    padding-left: 1rem;
+    margin-top: 1rem;
+  }
+  .legal-prose a {
+    text-decoration: underline;
+  }
+  .legal-prose .table-scroll {
+    overflow-x: auto;
+    margin-top: 1rem;
+  }
+  .legal-prose table {
+    width: 100%;
+    min-width: 540px;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .legal-prose th,
+  .legal-prose td {
+    text-align: left;
+    vertical-align: top;
+    padding: 8px 12px 8px 0;
+    border-bottom: 1px solid oklch(0.88 0.01 80);
+    line-height: 1.5;
+  }
+  .legal-prose th {
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
   /* Letter-spaced caps — section labels, metadata. Hanken, not mono. */
   .type-cap {
     font-family: var(--font-sans), "Hanken Grotesk", system-ui, sans-serif;

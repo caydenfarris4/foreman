@@ -192,6 +192,18 @@ export default function LandingPage() {
           </span>
           <div className="flex items-center gap-4">
             <Link
+              href="/privacy"
+              className="type-label text-graphite hover:text-ink"
+            >
+              Privacy
+            </Link>
+            <Link
+              href="/terms"
+              className="type-label text-graphite hover:text-ink"
+            >
+              Terms
+            </Link>
+            <Link
               href="/login"
               className="type-label text-graphite hover:text-ink"
             >

@@ -1,5 +1,12 @@
 # scripts
 
+## build-legal.mjs — /terms and /privacy content
+
+Converts `docs/legal/*.md` into the generated HTML modules
+(`lib/legal/*-html.ts`) that the `/terms` and `/privacy` pages render.
+To change either document: edit the markdown, run
+`node scripts/build-legal.mjs`, commit both files.
+
 ## generate-pwa-icons.py — app icon set
 
 Regenerates the PWA / Play Store icons (`public/icons/*`, `app/icon.png`)
