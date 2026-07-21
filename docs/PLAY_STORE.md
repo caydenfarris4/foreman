@@ -67,10 +67,9 @@ type: App, free). Then work through the **Set up your app** checklist:
   screenshots (take them from the installed test APK or Chrome device
   mode, min 320px, 16:9-ish), a 512×512 icon (use
   `public/icons/icon-512.png`), and a 1024×500 feature graphic.
-- **Privacy policy URL:** required. Foreman needs a public privacy-policy
-  page (e.g. `/privacy`) covering account data, check-in content sent to
-  Anthropic for coaching, emails via Resend, and payments via Stripe.
-  *This page doesn't exist yet — it's the one real content task left.*
+- **Privacy policy URL:** `https://foreman.coach/privacy` (live; source in
+  `docs/legal/privacy.md`, rendered via `scripts/build-legal.mjs`). Terms
+  live at `/terms` the same way.
 - **Data safety form:** declare collection of email address (account),
   user-generated content (check-ins/situations), and purchase history
   (Stripe). All encrypted in transit; account deletion available — use
