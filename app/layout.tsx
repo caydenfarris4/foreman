@@ -1,7 +1,25 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Newsreader, Hanken_Grotesk } from "next/font/google";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import "./globals.css";
+
+// Chrome fires `beforeinstallprompt` once, early, and only surfaces its own
+// install UI unless we intercept it. This runs before hydration so the event
+// is never missed; components read window.__foremanInstallEvent via
+// components/pwa/use-install-prompt.ts.
+const INSTALL_CAPTURE = `
+window.__foremanInstallEvent = null;
+window.addEventListener('beforeinstallprompt', function (e) {
+  e.preventDefault();
+  window.__foremanInstallEvent = e;
+  window.dispatchEvent(new Event('foreman:install-ready'));
+});
+window.addEventListener('appinstalled', function () {
+  window.__foremanInstallEvent = null;
+  window.dispatchEvent(new Event('foreman:install-done'));
+});
+`;
 
 // Cornerstone design system: Newsreader (light, literary serif) for display
 // and prompts; Hanken Grotesk for everything else, including the letter-spaced
@@ -50,6 +68,9 @@ export default function RootLayout({
       className={`${serif.variable} ${sans.variable}`}
     >
       <body>
+        <Script id="install-capture" strategy="beforeInteractive">
+          {INSTALL_CAPTURE}
+        </Script>
         {children}
         <ServiceWorkerRegistration />
       </body>

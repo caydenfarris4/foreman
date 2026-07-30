@@ -1,5 +1,20 @@
 # scripts
 
+## send-launch-email.mjs — one-time waitlist launch announcement
+
+Emails everyone in `waitlist_signups` who hasn't been notified that Foreman
+is live (link → foreman.coach/start). Apply
+`supabase/migrations/0014_waitlist_launch_notify.sql` first. Dry-run by
+default; idempotent via `launch_notified_at`.
+
+```bash
+node scripts/send-launch-email.mjs          # dry run — prints recipients
+node scripts/send-launch-email.mjs --send   # actually send
+```
+
+Needs `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
+`RESEND_API_KEY`, `RESEND_FROM_EMAIL` (reads `.env.local`).
+
 ## build-legal.mjs — /terms and /privacy content
 
 Converts `docs/legal/*.md` into the generated HTML modules
