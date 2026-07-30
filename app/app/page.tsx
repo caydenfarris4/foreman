@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PhaseTag } from "@/components/ui/phase-tag";
 import { Reveal, Stagger, StaggerItem } from "@/lib/motion";
+import { InstallCard } from "@/components/pwa/install-card";
 import { createClient } from "@/lib/supabase/server";
 import { promptForDay } from "@/lib/prompts/daily";
 import { reflectionForDay } from "@/lib/prompts/reflection";
@@ -289,6 +290,10 @@ export default async function DashboardPage({
           {profile.name ? `Morning, ${profile.name}.` : "Welcome back."}
         </h1>
       </header>
+
+      {/* One-time nudge to install the PWA; hides itself once installed,
+          dismissed, or in browsers with no install path. */}
+      <InstallCard className="mx-3" />
 
       {!hasPlan ? (
         <Reveal as="panelRise" className="mx-3">
