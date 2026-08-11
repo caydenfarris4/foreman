@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { CoachingSession, Profile } from "@/lib/database.types";
 import { CoachChat } from "./coach-chat";
 import { BookingCard } from "./booking-card";
+import { BOOK_URL } from "@/lib/book";
 
 // The Coach tab: a contained conversation grounded in Under Construction —
 // the coach in the author's voice — plus 1:1 sessions with Cayden.
@@ -52,7 +53,16 @@ export default async function CoachPage({
           <h1 className="type-h2 text-ink">Your Coach</h1>
           <p className="type-caption mt-0.5 flex items-center gap-1.5 text-graphite">
             <span className="h-1.5 w-1.5 rounded-full bg-moss" />
-            Grounded in the book · always here
+            Grounded in{" "}
+            <a
+              href={BOOK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-ink"
+            >
+              the book
+            </a>{" "}
+            · always here
           </p>
         </div>
       </header>

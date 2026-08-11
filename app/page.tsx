@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Wordmark } from "@/components/ui/wordmark";
 import { PhaseTag } from "@/components/ui/phase-tag";
 import { PRICING } from "@/lib/stripe";
+import { BOOK_URL } from "@/lib/book";
 
 export default function LandingPage() {
   return (
@@ -39,7 +40,14 @@ export default function LandingPage() {
       <section className="container pb-16 pt-20 md:pb-24 md:pt-28">
         <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
           <div>
-            <p className="type-cap text-graphite">UNDER CONSTRUCTION</p>
+            <a
+              href={BOOK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="type-cap text-graphite underline-offset-4 hover:text-ink hover:underline"
+            >
+              UNDER CONSTRUCTION — THE BOOK
+            </a>
             <h1 className="type-display mt-4 text-ink md:text-[52px] md:leading-[1.05]">
               Coaching for first-time managers —{" "}
               <span className="text-blueprint">five minutes a day</span>.
@@ -191,6 +199,14 @@ export default function LandingPage() {
             Built from the job site, not the penthouse.
           </span>
           <div className="flex items-center gap-4">
+            <a
+              href={BOOK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="type-label text-graphite hover:text-ink"
+            >
+              The book
+            </a>
             <Link
               href="/privacy"
               className="type-label text-graphite hover:text-ink"

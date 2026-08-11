@@ -3,6 +3,8 @@
 A daily coaching app for first-time managers, built on the *Under
 Construction* framework: **foundation, framing, finishing.**
 
+The book is live: [*Under Construction* on Amazon](https://www.amazon.com/Under-Construction-Leadership-Principles-First-Time/dp/B0H76DT3DM).
+
 ## Stack
 
 - Next.js 15 (App Router, TypeScript strict)
